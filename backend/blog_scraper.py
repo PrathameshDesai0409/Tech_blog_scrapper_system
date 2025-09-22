@@ -6,10 +6,17 @@ import re
 from bs4 import BeautifulSoup
 from collections import Counter
 from urllib.parse import urljoin
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
-from playwright.async_api import async_playwright
+import re
+from collections import Counter
+import json
+import os
+from openai import OpenAI
 
+# --- Main Configuration ---
+
+# --- THIS IS THE CHANGE ---
+# Paste your OpenAI API key directly here.
+# WARNING: Do not share this file publicly with your key inside.
 API_KEY = "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" 
 
 client = None
