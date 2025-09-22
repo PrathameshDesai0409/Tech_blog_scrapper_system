@@ -1,239 +1,218 @@
-# backend/blog_scraper.py
-
+import os
+import json
 import asyncio
 import httpx
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 import re
+from bs4 import BeautifulSoup
 from collections import Counter
-import json
-import os
-from openai import OpenAI
+from urllib.parse import urljoin
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
+from playwright.async_api import async_playwright
 
-# --- Main Configuration ---
-
-# --- THIS IS THE CHANGE ---
-# Paste your OpenAI API key directly here.
-# WARNING: Do not share this file publicly with your key inside.
 API_KEY = "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" 
 
-try:
-    if not API_KEY or API_KEY == "your-api-key-goes-here" or "xxxxxxxx" in API_KEY:
-        print("ERROR: Please replace the sample API key with your actual OpenAI API key.")
-        client = None
-    else:
-        client = OpenAI(api_key=API_KEY)
-except Exception as e:
-    print(f"Error initializing OpenAI client: {e}")
-    client = None
+client = None
+if not API_KEY:
+    print("ERROR: OPENAI_API_KEY not found in .env file. LLM features will be disabled.")
+else:
+    client = AsyncOpenAI(api_key=API_KEY)
 
-BLOG_DATA = {
-    "B2B Marketing": [
-        {"name": "Animalz Blog", "url": "https://www.animalz.co/blog/"},
-        {"name": "SaaStr", "url": "https://www.saastr.com/"},
-        {"name": "B2B Marketing Blog", "url": "https://www.b2bmarketing.net/en-gb/resources/blog"},
-        {"name": "Superpath Blog", "url": "https://superpath.co/blog"}
-    ],
-    "Digital Marketing": [
-        {"name": "HubSpot Marketing Blog", "url": "https://blog.hubspot.com/marketing"},
-        {"name": "Neil Patel Blog", "url": "https://neilpatel.com/blog/"},
-        {"name": "Moz Blog", "url": "https://moz.com/blog"},
-        {"name": "MarketingProfs Blog", "url": "https://www.marketingprofs.com/articles"},
-        {"name": "Search Engine Land", "url": "https://searchengineland.com/"}
-    ],
-    "Specialized Marketing": [
-        {"name": "Litmus Blog", "url": "https://www.litmus.com/blog/"},
-        {"name": "Hootsuite Blog", "url": "https://blog.hootsuite.com/"},
-        {"name": "Content Marketing Institute", "url": "https://contentmarketinginstitute.com/blog/"},
-        {"name": "Convince & Convert Blog", "url": "https://www.convinceandconvert.com/blog/"},
-        {"name": "Unbounce Blog", "url": "https://unbounce.com/blog/"}
-    ]
+# --- LLM CATEGORIZATION SETUP ---
+# The LLM will be instructed to choose from these categories. This structure
+# directly maps to what the index.html file expects.
+CATEGORIES = {
+    "Technology": ["AI", "Quantum", "Eco Tech", "Software", "Hardware", "Cybersecurity"],
+    "Business": ["Marketing", "Supply Chain", "Work", "Economy", "Startups", "Finance"],
+    "Lifestyle": ["Home", "Wellness", "Travel", "Food", "Productivity", "Health"]
 }
+
+# --- FILE & CACHE SETUP ---
+BLOG_SOURCES_FILE = 'blogs.json'
 HISTORY_FILE = 'history.json'
 SUMMARY_CACHE_FILE = 'summary_cache.json'
-MAX_CACHE_SIZE = 1000 # Set a maximum number of summaries to cache
+MAX_CACHE_SIZE = 500
+
+# Load blog sources from JSON to be available for import by other scripts like app.py.
+try:
+    with open(BLOG_SOURCES_FILE, 'r') as f:
+        BLOG_DATA = json.load(f)
+except FileNotFoundError:
+    print(f"ERROR: {BLOG_SOURCES_FILE} not found. Please create it.")
+    BLOG_DATA = []
+except json.JSONDecodeError:
+    print(f"ERROR: Could not decode {BLOG_SOURCES_FILE}. Please check its format.")
+    BLOG_DATA = []
+
+
+# --- ANALYSIS & HELPER SETUP (from your original code) ---
 STOP_WORDS = set(['a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'what', 'which', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', 'couldn', 'didn', 'doesn', 'hadn', 'hasn', 'haven', 'isn', 'ma', 'mightn', 'mustn', 'needn', 'shan', 'shouldn', 'wasn', 'weren', 'won', 'wouldn', 'your', 'b2b', 'marketing', 'content', 'how', 'to', 'your', 'you', 'for', 'the', 'and', 'in', 'of', 'with', 'on', 'at', 'by', 'from', 'its', 'vs'])
 POSITIVE_WORDS = set(['amazing', 'growth', 'success', 'effective', 'powerful', 'boost', 'win', 'improve', 'best', 'top', 'new', 'innovative'])
 NEGATIVE_WORDS = set(['mistakes', 'avoid', 'bad', 'fail', 'problem', 'risk', 'warning', 'stop', 'decline', 'worst', 'never'])
 
+# --- BROWSER-LIKE HEADERS TO AVOID 403 ERRORS ---
+REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
+
 # --- ANALYSIS & AI FUNCTIONS ---
+
+async def get_llm_category(text_to_classify):
+    if not client:
+        print("ERROR: OpenAI client not initialized. Cannot categorize.")
+        return {"main_category": "Business", "sub_category": "Marketing"} # Fallback
+
+    system_prompt = f"""
+    You are an expert content classifier. Your task is to categorize article text into the most appropriate main and sub-category.
+    You MUST respond with a single, valid JSON object with keys "main_category" and "sub_category".
+    The available categories are:
+    {json.dumps(CATEGORIES, indent=2)}
+    """
+    user_prompt = f"Please categorize this article text:\n\n\"{text_to_classify[:1000]}\""
+
+    try:
+        completion = await client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        parsed_json = json.loads(completion.choices[0].message.content)
+        main_cat, sub_cat = parsed_json.get("main_category"), parsed_json.get("sub_category")
+
+        if main_cat in CATEGORIES and sub_cat in CATEGORIES.get(main_cat, []):
+            return parsed_json
+        else:
+            print(f"WARN: LLM returned invalid category: {parsed_json}. Falling back.")
+            return {"main_category": "Business", "sub_category": "Marketing"}
+
+    except Exception as e:
+        print(f"ERROR: OpenAI API call failed: {e}")
+        return {"main_category": "Business", "sub_category": "Marketing"}
 
 def analyze_sentiment(text):
     score = 0
     words = set(re.findall(r'\b\w+\b', text.lower()))
-    for word in words:
-        if word in POSITIVE_WORDS: score += 1
-        elif word in NEGATIVE_WORDS: score -= 1
+    score += sum(1 for word in words if word in POSITIVE_WORDS)
+    score -= sum(1 for word in words if word in NEGATIVE_WORDS)
     if score > 0: return 'Positive'
     if score < 0: return 'Negative'
     return 'Neutral'
 
-def count_syllables(word):
-    word = word.lower()
-    count = 0
-    vowels = "aeiouy"
-    if word and word[0] in vowels: count += 1
-    for index in range(1, len(word)):
-        if word[index] in vowels and word[index - 1] not in vowels: count += 1
-    if word.endswith("e"): count -= 1
-    if count == 0: count += 1
-    return count
-
-def calculate_readability(text):
-    try:
-        words = text.split()
-        num_words = len(words)
-        if num_words == 0: return "N/A"
-        num_sentences = text.count('.') + text.count('!') + text.count('?')
-        if num_sentences == 0: num_sentences = 1
-        num_syllables = sum(count_syllables(word) for word in words)
-        score = 0.39 * (num_words / num_sentences) + 11.8 * (num_syllables / num_words) - 15.59
-        grade_level = round(score)
-        if grade_level >= 16: return "Post-Graduate"
-        if grade_level >= 13: return "College Level"
-        if grade_level >= 9: return "High School"
-        if grade_level >= 6: return "Middle School"
-        return "Easy to Read"
-    except Exception:
-        return "N/A"
-
-async def get_ai_summary(full_text):
-    if not client:
-        return "OpenAI client not initialized. Please set your API key in the script."
-    try:
-        truncated_text = " ".join(full_text.split()[:1500])
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes articles concisely."},
-                {"role": "user", "content": f"Please summarize the following article in one concise paragraph, strictly between 25 and 30 words: {truncated_text}"}
-            ]
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return f"AI summary failed: {e}"
-
 # --- CORE SCRAPING LOGIC ---
 
-async def fetch_article_details(session, post_url):
+async def fetch_article_details_and_categorize(session, post_url, summary_cache):
+    cached_item = summary_cache.get(post_url)
+    if isinstance(cached_item, dict):
+        return cached_item
+
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-        response = await session.get(post_url, headers=headers, timeout=10, follow_redirects=True)
+        response = await session.get(post_url, headers=REQUEST_HEADERS, timeout=10)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
+        html_content = response.content.decode('utf-8', errors='replace')
+        soup = BeautifulSoup(html_content, 'html.parser')
         
         paragraphs = soup.find_all('p', string=True)
-        full_text = " ".join([p.get_text(strip=True) for p in paragraphs])
+        full_text = " ".join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
+        summary = " ".join(full_text.split()[:150])
+        
+        category_data = await get_llm_category(summary)
+        
         og_image = soup.find('meta', property='og:image')
         image_url = og_image['content'] if og_image else None
-        time_tag = soup.find('time')
-        publish_date = time_tag['datetime'] if time_tag and time_tag.has_attr('datetime') else "N/A"
-
-        return {
-            "full_text": full_text if full_text else "No content found.",
-            "image_url": image_url,
-            "publish_date": publish_date
+        
+        result = {
+            "summary": summary, "image_url": image_url,
+            "main_category": category_data["main_category"], "sub_category": category_data["sub_category"]
         }
-    except Exception:
-        return {"full_text": "Could not load article content.", "image_url": None, "publish_date": "N/A"}
-
-async def scrape_single_blog(session, blog_info, category, summary_cache, post_limit=2):
-    url = blog_info["url"]
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-        response = await session.get(url, headers=headers, timeout=15, follow_redirects=True)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        posts = []
-        potential_links = soup.select('h2 a, h3 a, article a')
-        
-        for link in potential_links:
-            if len(posts) >= post_limit: break
-            if link.has_attr('href') and link.get_text(strip=True):
-                post_title = link.get_text(strip=True)
-                post_url = link['href']
-                
-                if not any(p['title'] == post_title for p in posts) and len(post_title.split()) > 3:
-                    if not post_url.startswith('http'): post_url = urljoin(url, post_url)
-                    
-                    ai_summary = ""
-                    if post_url in summary_cache:
-                        ai_summary = summary_cache[post_url]
-                    else:
-                        details = await fetch_article_details(session, post_url)
-                        ai_summary = await get_ai_summary(details["full_text"])
-                        summary_cache[post_url] = ai_summary
-                    
-                    details = await fetch_article_details(session, post_url)
-                    
-                    posts.append({
-                        'title': post_title,
-                        'url': post_url,
-                        'snippet': ai_summary,
-                        'image_url': details['image_url'],
-                        'publish_date': details['publish_date'],
-                        'sentiment': analyze_sentiment(post_title),
-                        'readability': calculate_readability(ai_summary)
-                    })
-        
-        final_result = { "name": blog_info["name"], "url": url, "category": category }
-        if not posts: final_result["error"] = "Could not find any post links."
-        else: final_result["posts"] = posts
-
-        return final_result
+        summary_cache[post_url] = result
+        return result
     except Exception as e:
-        return {"name": blog_info["name"], "url": url, "category": category, "error": f"An error occurred: {str(e)}"}
+        print(f"Error fetching details for {post_url}: {e}")
+        return None
+
+async def scrape_single_blog(session, browser, blog_info, summary_cache, post_limit=2):
+    url, blog_name = blog_info["url"], blog_info["name"]
+    print(f"Scraping {blog_name}...")
+    
+    page = await browser.new_page()
+    processed_posts = []
+    try:
+        await page.goto(url, timeout=60000, wait_until='domcontentloaded')
+        # Wait for potential dynamic content to load
+        await page.wait_for_timeout(5000) 
+        html_content = await page.content()
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        potential_links = soup.select('h2 a, h3 a, article a')
+        unique_urls = set()
+
+        for link_tag in potential_links:
+            if len(processed_posts) >= post_limit: break
+            
+            if link_tag.has_attr('href') and link_tag.get_text(strip=True):
+                post_title = link_tag.get_text(strip=True)
+                post_url = urljoin(url, link_tag['href'])
+                
+                if post_url not in unique_urls and len(post_title.split()) > 3:
+                    unique_urls.add(post_url)
+                    details = await fetch_article_details_and_categorize(session, post_url, summary_cache)
+                    if details:
+                        processed_posts.append({
+                            'title': post_title, 'url': post_url, 'summary': details['summary'],
+                            'imageUrl': details['image_url'], 'source': blog_name, 'author': "N/A",
+                            'main_category': details['main_category'], 'sub_category': details['sub_category']
+                        })
+        
+        print(f"Found {len(processed_posts)} posts for {blog_name}.")
+    except Exception as e:
+        print(f"ERROR: Could not scrape {blog_name}: {e}")
+    finally:
+        await page.close()
+
+    return processed_posts
 
 async def get_all_blog_data():
-    previous_keywords = {}
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, 'r') as f: previous_keywords = json.load(f)
+    if not BLOG_DATA:
+        print("ERROR: Blog data sources are empty.")
+        return {}
 
     summary_cache = {}
     if os.path.exists(SUMMARY_CACHE_FILE):
         with open(SUMMARY_CACHE_FILE, 'r') as f: summary_cache = json.load(f)
 
-    # --- NEW: Pruning the summary cache ---
     if len(summary_cache) > MAX_CACHE_SIZE:
-        # Convert to list of items, take the most recent ones, convert back to dict
         items = list(summary_cache.items())
-        trimmed_items = items[-MAX_CACHE_SIZE:]
-        summary_cache = dict(trimmed_items)
-        print(f"CACHE: Pruned summary cache to {len(summary_cache)} entries.")
+        summary_cache = dict(items[-MAX_CACHE_SIZE:])
+
+    final_data = {main_cat: {} for main_cat in CATEGORIES.keys()}
     
-    scraped_data = {category: [] for category in BLOG_DATA.keys()}
-    async with httpx.AsyncClient() as session:
-        tasks = []
-        for category, blogs in BLOG_DATA.items():
-            for blog_info in blogs:
-                tasks.append(scrape_single_blog(session, blog_info, category, summary_cache))
-        
-        results = await asyncio.gather(*tasks)
-
-    current_keywords_for_history = {}
-    for result in results:
-        category = result.get("category")
-        if category and category in scraped_data:
-            if 'posts' in result:
-                all_titles = " ".join([p['title'] for p in result['posts']])
-                words = re.findall(r'\b\w+\b', all_titles.lower())
-                filtered_words = [word for word in words if word not in STOP_WORDS and len(word) > 3]
-                current_counts = Counter(filtered_words)
-                current_keywords_for_history[result['name']] = dict(current_counts)
-                previous_counts = previous_keywords.get(result['name'], {})
-                keywords_with_trends = []
-                for word, count in current_counts.most_common(5):
-                    trend = 'stable'
-                    if word not in previous_counts: trend = 'new'
-                    elif count > previous_counts[word]: trend = 'up'
-                    elif count < previous_counts[word]: trend = 'down'
-                    keywords_with_trends.append({'keyword': word, 'trend': trend})
-                result['keywords'] = keywords_with_trends
-            scraped_data[category].append(result)
-
-    with open(HISTORY_FILE, 'w') as f: json.dump(current_keywords_for_history, f, indent=2)
-    with open(SUMMARY_CACHE_FILE, 'w') as f: json.dump(summary_cache, f, indent=2)
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        async with httpx.AsyncClient(http2=True, headers=REQUEST_HEADERS) as session:
+            tasks = [scrape_single_blog(session, browser, blog_info, summary_cache) for blog_info in BLOG_DATA]
+            results = await asyncio.gather(*tasks)
             
-    return scraped_data
+            all_scraped_posts = [post for post_list in results for post in post_list]
+
+            for post in all_scraped_posts:
+                main_cat, sub_cat = post["main_category"], post["sub_category"]
+                if main_cat in final_data:
+                    final_data[main_cat].setdefault(sub_cat, []).append({k: v for k, v in post.items() if k not in ['main_category', 'sub_category']})
+        await browser.close()
+
+    final_data = {k: v for k, v in final_data.items() if v}
+    with open(SUMMARY_CACHE_FILE, 'w') as f: json.dump(summary_cache, f, indent=2)
+    
+    return final_data
+
+if __name__ == '__main__':
+    print("Starting blog scrape...")
+    data = asyncio.run(get_all_blog_data())
+    print("\n--- SCRAPING COMPLETE ---")
+    print(json.dumps(data, indent=2))
 

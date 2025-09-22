@@ -1,0 +1,12 @@
+[
+    { "name": "Animalz Blog", "url": "https://www.animalz.co/blog/" },
+    { "name": "SaaStr", "url": "https://www.saastr.com/" },
+    { "name": "B2B Marketing Blog", "url": "https://www.b2bmarketing.net/en-gb/resources/blog" },
+    { "name": "HubSpot Marketing Blog", "url": "https://blog.hubspot.com/marketing" },
+    { "name": "Neil Patel Blog", "url": "https://neilpatel.com/blog/" },
+    { "name": "Moz Blog", "url": "https://moz.com/blog" },
+    { "name": "Search Engine Land", "url": "https://searchengineland.com/" },
+    { "name": "Litmus Blog", "url": "https://www.litmus.com/blog/" },
+    { "name": "Hootsuite Blog", "url": "https://blog.hootsuite.com/" },
+    { "name": "Content Marketing Institute", "url": "https://contentmarketinginstitute.com/blog/" }
+]

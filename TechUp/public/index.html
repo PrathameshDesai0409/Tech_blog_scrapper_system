@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechUp</title>
+    <!-- Swiper.js for swipe gestures -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #0d1117;
+            --secondary-bg: #161b22;
+            --card-bg: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --border-color: #30363d;
+        }
+
+        /* --- Basic Setup & Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* --- Splash Screen --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .typing-container {
+            display: inline-block;
+        }
+
+        #typing-text {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: .15em solid var(--accent);
+            animation: typing 2.5s steps(8, end) forwards, blink-caret .75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--accent); }
+        }
+
+        /* --- Main App Container --- */
+        #app {
+            display: none; /* Hidden initially */
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+        
+        #app.visible {
+            opacity: 1;
+        }
+
+        #app-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        /* --- Home Page (Domain Selection) --- */
+        #home-page {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .domain-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .domain-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent);
+        }
+
+        .domain-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .domain-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .domain-card.vertical {
+            grid-row: 1 / 2;
+        }
+
+        .domain-card.horizontal {
+            grid-column: 1 / 3;
+            grid-row: 2 / 3;
+        }
+        
+        /* --- Feed Page (Swiper View) --- */
+        #feed-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-bg);
+            z-index: 500;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        #feed-page.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        #feed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            background-color: var(--primary-bg);
+            z-index: 550;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #subdomain-nav {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #subdomain-nav::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .subdomain-nav-item {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .subdomain-nav-item.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .swiper-container {
+            width: 100%;
+            height: 100%;
+            padding-top: 60px; /* To offset for the header */
+        }
+
+        .story-card {
+            display: flex;
+            flex-direction: column;
+            background-color: #000;
+            color: #fff;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .story-image {
+            width: 100%;
+            height: 45%;
+            object-fit: cover;
+            background-color: var(--secondary-bg);
+        }
+        
+        .story-content {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            background: linear-gradient(to top, #000, #111);
+            text-align: left;
+        }
+        
+        .story-content h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .story-content p {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            flex-grow: 1;
+        }
+
+        .keywords {
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .keyword {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .story-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+
+        .source-link {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .source-link a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .source-link a:hover {
+            text-decoration: underline;
+        }
+
+        .linkedin-share-btn {
+            background-color: #0077B5;
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .linkedin-share-btn:hover {
+            background-color: #005e90;
+        }
+        
+        #back-to-home {
+            background: transparent;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0;
+            margin-right: 1rem;
+            z-index: 560;
+        }
+        #back-to-home:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 768px) {
+            #home-page {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto; /* Let rows size automatically */
+                gap: 1rem;
+            }
+
+            .domain-card.horizontal {
+                grid-column: 1 / 2; /* Make horizontal card stack normally */
+                grid-row: auto;
+            }
+
+            #app-title {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .domain-card {
+                padding: 1.5rem;
+            }
+
+            .domain-card h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #app {
+                padding: 1rem 0.5rem;
+            }
+
+            #typing-text {
+                font-size: 2.5rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Splash screen -->
+    <div id="splash-screen">
+        <div class="typing-container">
+            <h1 id="typing-text">TechUp</h1>
+        </div>
+    </div>
+
+    <!-- Main App Content -->
+    <div id="app">
+        <h1 id="app-title">TechUp</h1>
+        <div id="home-page">
+            <div class="domain-card vertical" data-domain="business">
+                <h2>Business Insights</h2>
+                <p>Intel, Finance, Startups & More</p>
+            </div>
+            <div class="domain-card vertical" data-domain="marketing">
+                <h2>Digital Marketing</h2>
+                <p>Economics, Social Media & Niche Strategies</p>
+            </div>
+            <div class="domain-card horizontal" data-domain="ai">
+                <h2>AI Research</h2>
+                <p>Industry Trends & Marketing Automation</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Page for viewing stories -->
+    <div id="feed-page">
+        <div id="feed-header">
+            <button id="back-to-home"><i class="fas fa-arrow-left"></i></button>
+            <div id="subdomain-nav">
+                <!-- Nav items will be injected here -->
+            </div>
+        </div>
+        <!-- Horizontal Swiper for Subdomains -->
+        <div class="swiper-container" id="subdomain-swiper">
+            <div class="swiper-wrapper" id="subdomain-wrapper">
+                <!-- Subdomain slides will be injected here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const splashScreen = document.getElementById('splash-screen');
+            const app = document.getElementById('app');
+            const feedPage = document.getElementById('feed-page');
+            const domainCards = document.querySelectorAll('.domain-card');
+            const backToHomeBtn = document.getElementById('back-to-home');
+            let subdomainSwiper = null;
+            let storyData = {}; // This will hold our data from the backend
+
+            // --- FETCH DATA FROM OUR BACKEND ---
+            try {
+                const response = await fetch('/api/stories');
+                storyData = await response.json();
+            } catch (error) {
+                console.error("Failed to fetch stories:", error);
+                // In a real app, you'd show an error message to the user
+            }
+
+            // 1. Handle Splash Screen
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                app.style.display = 'flex';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    app.classList.add('visible');
+                }, 500);
+            }, 3000);
+
+            // 2. Handle Domain Card Clicks
+            domainCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const domain = card.dataset.domain;
+                    showFeed(domain);
+                });
+            });
+
+            // 3. Handle Back Button
+            backToHomeBtn.addEventListener('click', () => {
+                feedPage.classList.remove('visible');
+                app.style.display = 'flex';
+                if (subdomainSwiper) {
+                    subdomainSwiper.destroy(true, true);
+                    subdomainSwiper = null;
+                }
+            });
+
+            // 4. Function to Build and Show the Feed
+            function showFeed(domain) {
+                const subdomainWrapper = document.getElementById('subdomain-wrapper');
+                const subdomainNav = document.getElementById('subdomain-nav');
+                const domainData = storyData[domain];
+
+                if (!domainData || Object.keys(domainData).length === 0) {
+                    alert(`No stories found for ${domain}. The scraper might need to run.`);
+                    return;
+                }
+                
+                subdomainWrapper.innerHTML = ''; 
+                subdomainNav.innerHTML = '';
+
+                const subdomains = Object.keys(domainData);
+
+                // --- DYNAMICALLY BUILD HTML for the SWIPERS ---
+                subdomains.forEach((subdomainName, index) => {
+                    // Add nav item
+                    const navItem = document.createElement('div');
+                    navItem.classList.add('subdomain-nav-item');
+                    navItem.textContent = subdomainName;
+                    if (index === 0) {
+                        navItem.classList.add('active');
+                    }
+                    navItem.addEventListener('click', () => {
+                        if (subdomainSwiper) {
+                            subdomainSwiper.slideTo(index);
+                        }
+                    });
+                    subdomainNav.appendChild(navItem);
+
+                    const stories = domainData[subdomainName];
+                    let storiesHTML = '';
+
+                    stories.forEach(story => {
+                        storiesHTML += `
+                            <div class="swiper-slide story-card" 
+                                data-full-content="${encodeURIComponent(story.fullContent)}"
+                                data-headline="${story.headline}">
+                                <img class="story-image" src="${story.image}" alt="${story.headline}" onerror="this.src='https://placehold.co/600x400/21262d/8b949e?text=Image+Not+Found'">
+                                <div class="story-content">
+                                    <h3>${story.headline}</h3>
+                                    <p>${story.summary}</p>
+                                    <div class="keywords">
+                                        ${(story.keywords || []).map(k => `<span class="keyword">${k}</span>`).join('')}
+                                    </div>
+                                    <div class="story-footer">
+                                        <span class="source-link">${story.date} &bull; <a href="${story.originalUrl}" target="_blank">${story.source}</a></span>
+                                        <button class="linkedin-share-btn">
+                                            <i class="fab fa-linkedin"></i> Share
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+
+                    if (storiesHTML) {
+                        subdomainWrapper.innerHTML += `
+                            <div class="swiper-slide">
+                                <!-- This is the container for a single vertical swiper -->
+                                <div class="swiper-container blog-swiper">
+                                    <div class="swiper-wrapper">${storiesHTML}</div>
+                                </div>
+                            </div>`;
+                    }
+                });
+
+                // --- SHOW THE FEED and INITIALIZE SWIPERS ---
+                app.style.display = 'none';
+                feedPage.classList.add('visible');
+                
+                // Initialize the main horizontal swiper for subdomains
+                subdomainSwiper = new Swiper('#subdomain-swiper', {
+                    direction: 'horizontal',
+                    loop: false,
+                    on: {
+                        slideChange: function () {
+                            const activeIndex = this.activeIndex;
+                            document.querySelectorAll('.subdomain-nav-item').forEach((item, index) => {
+                                item.classList.toggle('active', index === activeIndex);
+                            });
+                        }
+                    }
+                });
+
+                // *** THE CRITICAL FIX IS HERE ***
+                // We must loop through each vertical swiper container and initialize it individually.
+                document.querySelectorAll('.blog-swiper').forEach(swiperElement => {
+                    new Swiper(swiperElement, {
+                        direction: 'vertical',
+                        loop: false,
+                        nested: true, // Let Swiper know this is a nested instance
+                    });
+                });
+            }
+            
+            // 5. Handle LinkedIn Share Button Click (Event Delegation)
+            document.body.addEventListener('click', async function(event) {
+                if (event.target.closest('.linkedin-share-btn')) {
+                    const card = event.target.closest('.story-card');
+                    const storyDataForShare = {
+                        headline: card.dataset.headline,
+                        fullContent: decodeURIComponent(card.dataset.fullContent),
+                        image: card.querySelector('.story-image').src,
+                        originalUrl: card.querySelector('.source-link a').href
+                    };
+
+                    try {
+                        const response = await fetch('/api/share/linkedin', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(storyDataForShare)
+                        });
+
+                        if (response.status === 401) {
+                            // User not authenticated, open auth popup
+                            const width = 600, height = 700;
+                            const left = (window.innerWidth / 2) - (width / 2);
+                            const top = (window.innerHeight / 2) - (height / 2);
+                            const authWindow = window.open(
+                                '/auth/linkedin', 
+                                'linkedinAuth', 
+                                `width=${width},height=${height},top=${top},left=${left}`
+                            );
+                            
+                            // Optional: Add a message to the user
+                            alert('Please complete the LinkedIn login in the popup window. After logging in, you may need to click the share button again.');
+                            return;
+                        }
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to share on LinkedIn.');
+                        }
+
+                        const result = await response.json();
+                        alert(result.message || 'Successfully shared on LinkedIn!');
+
+                    } catch (error) {
+                        console.error('Share error:', error);
+                        alert(`Could not share on LinkedIn: ${error.message}`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
