@@ -319,6 +319,130 @@
             background: rgba(255,255,255,0.2);
         }
 
+        /* --- Share Modal --- */
+        #share-modal {
+            display: none; /* Hidden by default */
+            position: fixed; 
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%;
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6); 
+        }
+
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: 10% auto; 
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            width: 80%;
+            max-width: 600px;
+            border-radius: 12px;
+            color: var(--text-primary);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            color: var(--text-secondary);
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-btn:hover, .close-btn:focus {
+            color: var(--text-primary);
+        }
+
+        .modal-body .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn-group .btn {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-group .btn:first-child { border-radius: 6px 0 0 6px; }
+        .btn-group .btn:last-child { border-radius: 0 6px 6px 0; }
+        .btn-group .btn.active {
+            background-color: var(--accent);
+            color: var(--primary-bg);
+            border-color: var(--accent);
+        }
+
+        #image-size-options {
+            display: none; /* Hidden initially */
+            margin-top: 1rem;
+        }
+
+        #preview-area {
+            margin-top: 1.5rem;
+            background-color: var(--primary-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        #preview-content {
+            white-space: pre-wrap; /* To respect newlines */
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-height: 100px;
+        }
+
+        .modal-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-footer .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            border: none;
+        }
+
+        .btn-secondary {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--primary-bg);
+        }
+
+
         /* --- Responsive Adjustments --- */
         @media (max-width: 768px) {
             #home-page {
@@ -397,6 +521,56 @@
         <div class="swiper-container" id="subdomain-swiper">
             <div class="swiper-wrapper" id="subdomain-wrapper">
                 <!-- Subdomain slides will be injected here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="share-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create LinkedIn Post</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Include Blog Name?</label>
+                    <div class="btn-group" id="include-blog-name">
+                        <button class="btn active" data-value="true">Yes</button>
+                        <button class="btn" data-value="false">No</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Include Blog Link?</label>
+                    <div class="btn-group" id="include-blog-link">
+                        <button class="btn active" data-value="true">Yes</button>
+                        <button class="btn" data-value="false">No</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Post Image</label>
+                    <div class="btn-group" id="image-source">
+                        <button class="btn active" data-value="blog">From Blog</button>
+                        <button class="btn" data-value="ai">AI Generated</button>
+                    </div>
+                </div>
+                <div class="form-group" id="image-size-options">
+                    <label>AI Image Size</label>
+                    <div class="btn-group" id="ai-image-size">
+                        <button class="btn active" data-value="480x690">480x690</button>
+                        <button class="btn" data-value="1200x628">1200x628</button>
+                        <button class="btn" data-value="1080x1080">1080x1080</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Post Preview</label>
+                    <div id="preview-area">
+                        <div id="preview-content">Your generated post content will appear here...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="recreate-btn">Recreate</button>
+                <button class="btn btn-primary" id="confirm-share-btn">Confirm & Post</button>
             </div>
         </div>
     </div>
@@ -545,56 +719,251 @@
                 });
             }
             
-            // 5. Handle LinkedIn Share Button Click (Event Delegation)
-            document.body.addEventListener('click', async function(event) {
-                if (event.target.closest('.linkedin-share-btn')) {
-                    const card = event.target.closest('.story-card');
-                    const storyDataForShare = {
-                        headline: card.dataset.headline,
-                        fullContent: decodeURIComponent(card.dataset.fullContent),
-                        image: card.querySelector('.story-image').src,
-                        originalUrl: card.querySelector('.source-link a').href
-                    };
+            // --- SHARE MODAL LOGIC ---
+            const shareModal = document.getElementById('share-modal');
+            const closeModalBtn = shareModal.querySelector('.close-btn');
+            const imageSourceGroup = shareModal.querySelector('#image-source');
+            const imageSizeOptions = shareModal.querySelector('#image-size-options');
+            const recreateBtn = document.getElementById('recreate-btn');
+            const confirmShareBtn = document.getElementById('confirm-share-btn');
+            const previewContent = document.getElementById('preview-content');
+            let activeStoryCard = null;
 
-                    try {
-                        const response = await fetch('/api/share/linkedin', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(storyDataForShare)
-                        });
-
-                        if (response.status === 401) {
-                            // User not authenticated, open auth popup
-                            const width = 600, height = 700;
-                            const left = (window.innerWidth / 2) - (width / 2);
-                            const top = (window.innerHeight / 2) - (height / 2);
-                            const authWindow = window.open(
-                                '/auth/linkedin', 
-                                'linkedinAuth', 
-                                `width=${width},height=${height},top=${top},left=${left}`
-                            );
-                            
-                            // Optional: Add a message to the user
-                            alert('Please complete the LinkedIn login in the popup window. After logging in, you may need to click the share button again.');
-                            return;
-                        }
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to share on LinkedIn.');
-                        }
-
-                        const result = await response.json();
-                        alert(result.message || 'Successfully shared on LinkedIn!');
-
-                    } catch (error) {
-                        console.error('Share error:', error);
-                        alert(`Could not share on LinkedIn: ${error.message}`);
-                    }
+            // Close modal
+            closeModalBtn.addEventListener('click', () => {
+                shareModal.style.display = 'none';
+            });
+            window.addEventListener('click', (event) => {
+                if (event.target == shareModal) {
+                    shareModal.style.display = 'none';
                 }
             });
+
+            // Handle button group clicks
+            shareModal.querySelectorAll('.btn-group').forEach(group => {
+                group.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('btn')) {
+                        Array.from(event.target.parentElement.children).forEach(child => child.classList.remove('active'));
+                        event.target.classList.add('active');
+
+                        if (group.id === 'image-source') {
+                            imageSizeOptions.style.display = event.target.dataset.value === 'ai' ? 'block' : 'none';
+                        }
+                    }
+                });
+            });
+
+            function getShareOptions() {
+                const includeBlogName = document.querySelector('#include-blog-name .btn.active').dataset.value === 'true';
+                const includeBlogLink = document.querySelector('#include-blog-link .btn.active').dataset.value === 'true';
+                const imageSource = document.querySelector('#image-source .btn.active').dataset.value;
+                const imageSize = document.querySelector('#ai-image-size .btn.active').dataset.value;
+
+                return { includeBlogName, includeBlogLink, imageSource, imageSize };
+            }
+
+            async function generatePreview() {
+                if (!activeStoryCard) return;
+
+                previewContent.textContent = 'Generating preview...';
+                const options = getShareOptions();
+                const storyData = {
+                    headline: activeStoryCard.dataset.headline,
+                    fullContent: decodeURIComponent(activeStoryCard.dataset.fullContent),
+                    originalUrl: activeStoryCard.querySelector('.source-link a').href,
+                    ...options
+                };
+
+                try {
+                    const response = await fetch('/api/share/preview', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(storyData)
+                    });
+
+                    if (response.status === 401) {
+                        handleAuthRedirect();
+                        return;
+                    }
+                    if (!response.ok) throw new Error('Failed to generate preview.');
+
+                    const data = await response.json();
+                    previewContent.textContent = data.previewText;
+
+                } catch (error) {
+                    previewContent.textContent = 'Error generating preview. Please try again.';
+                    console.error('Preview error:', error);
+                }
+            }
+
+            async function confirmAndPost() {
+                if (!activeStoryCard) return;
+
+                const options = getShareOptions();
+                const postData = {
+                    content: previewContent.textContent,
+                    originalImage: activeStoryCard.querySelector('.story-image').src,
+                    originalUrl: activeStoryCard.querySelector('.source-link a').href,
+                    headline: activeStoryCard.dataset.headline,
+                    ...options
+                };
+
+                confirmShareBtn.disabled = true;
+                confirmShareBtn.textContent = 'Posting...';
+
+                try {
+                    const response = await fetch('/api/share/post', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(postData)
+                    });
+
+                    if (response.status === 401) {
+                        handleAuthRedirect();
+                        return;
+                    }
+                    if (!response.ok) {
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to post.');
+                        } else {
+                            const errorText = await response.text();
+                            console.error("Server returned non-JSON response:", errorText);
+                            throw new Error("Server returned an unexpected response. See browser console for details.");
+                        }
+                    }
+
+                    const result = await response.json();
+                    alert(result.message || 'Successfully posted!');
+                    shareModal.style.display = 'none';
+
+                } catch (error) {
+                    alert(`Error posting: ${error.message}`);
+                } finally {
+                    confirmShareBtn.disabled = false;
+                    confirmShareBtn.textContent = 'Confirm & Post';
+                }
+            }
+
+            function handleAuthRedirect() {
+                alert('Please complete the LinkedIn login in the popup window. After logging in, you may need to click the share button again.');
+                const width = 600, height = 700;
+                const left = (window.innerWidth / 2) - (width / 2);
+                const top = (window.innerHeight / 2) - (height / 2);
+                window.open('/auth/linkedin', 'linkedinAuth', `width=${width},height=${height},top=${top},left=${left}`);
+            }
+
+            // Event Listeners
+            recreateBtn.addEventListener('click', generatePreview);
+            confirmShareBtn.addEventListener('click', confirmAndPost);
+
+            // 5. Handle LinkedIn Share Button Click (Event Delegation)
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    shareModal.style.display = 'block';
+                    await generatePreview(); // Generate initial preview
+                }
+            });
+        });
+    </script>`;
+                    });
+
+                    if (storiesHTML) {
+                        subdomainWrapper.innerHTML += `
+                            <div class="swiper-slide">
+                                <!-- This is the container for a single vertical swiper -->
+                                <div class="swiper-container blog-swiper">
+                                    <div class="swiper-wrapper">${storiesHTML}</div>
+                                </div>
+                            </div>`;
+                    }
+                });
+
+                // --- SHOW THE FEED and INITIALIZE SWIPERS ---
+                app.style.display = 'none';
+                feedPage.classList.add('visible');
+                
+                // Initialize the main horizontal swiper for subdomains
+                subdomainSwiper = new Swiper('#subdomain-swiper', {
+                    direction: 'horizontal',
+                    loop: false,
+                    on: {
+                        slideChange: function () {
+                            const activeIndex = this.activeIndex;
+                            document.querySelectorAll('.subdomain-nav-item').forEach((item, index) => {
+                                item.classList.toggle('active', index === activeIndex);
+                            });
+                        }
+                    }
+                });
+
+                // *** THE CRITICAL FIX IS HERE ***
+                // We must loop through each vertical swiper container and initialize it individually.
+                document.querySelectorAll('.blog-swiper').forEach(swiperElement => {
+                    new Swiper(swiperElement, {
+                        direction: 'vertical',
+                        loop: false,
+                        nested: true, // Let Swiper know this is a nested instance
+                    });
+                });
+            }
+            
+            // --- SHARE MODAL LOGIC ---
+            const shareModal = document.getElementById('share-modal');
+            const closeModalBtn = shareModal.querySelector('.close-btn');
+            const imageSourceGroup = shareModal.querySelector('#image-source');
+            const imageSizeOptions = shareModal.querySelector('#image-size-options');
+            let activeStoryCard = null;
+
+            // Close modal
+            closeModalBtn.addEventListener('click', () => {
+                shareModal.style.display = 'none';
+            });
+            window.addEventListener('click', (event) => {
+                if (event.target == shareModal) {
+                    shareModal.style.display = 'none';
+                }
+            });
+
+            // Handle button group clicks
+            shareModal.querySelectorAll('.btn-group').forEach(group => {
+                group.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('btn')) {
+                        // Remove active class from siblings
+                        Array.from(event.target.parentElement.children).forEach(child => {
+                            child.classList.remove('active');
+                        });
+                        // Add active class to the clicked button
+                        event.target.classList.add('active');
+
+                        // Special handling for image source
+                        if (group.id === 'image-source') {
+                            const source = event.target.dataset.value;
+                            if (source === 'ai') {
+                                imageSizeOptions.style.display = 'block';
+                            } else {
+                                imageSizeOptions.style.display = 'none';
+                            }
+                        }
+                    }
+                });
+            });
+
+            // 5. Handle LinkedIn Share Button Click (Event Delegation)
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    // TODO: Generate initial preview
+                    shareModal.style.display = 'block';
+                }
+            });
+
+            // TODO: Add logic for 'Recreate' and 'Confirm & Post' buttons
+
         });
     </script>
 </body>

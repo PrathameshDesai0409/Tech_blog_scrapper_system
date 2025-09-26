@@ -116,21 +116,38 @@ app.get('/api/stories', (req, res) => {
     });
 });
 
+// Endpoint to generate a preview of the LinkedIn post
+app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
+    const { headline, fullContent, originalUrl, includeBlogName, includeBlogLink } = req.body;
+
+    try {
+        const humanizedText = await humanizeForLinkedIn(headline, fullContent, originalUrl, includeBlogName, includeBlogLink);
+        res.status(200).json({ previewText: humanizedText });
+    } catch (error) {
+        console.error('Error generating preview:', error);
+        res.status(500).json({ message: 'Failed to generate preview.' });
+    }
+});
+
 // Endpoint to share a story on LinkedIn
-app.post('/api/share/linkedin', ensureAuthenticated, async (req, res) => {
-    const { headline, fullContent, image, originalUrl } = req.body;
+app.post('/api/share/post', ensureAuthenticated, async (req, res) => {
+    const { content, imageSource, imageSize, originalImage, originalUrl, headline } = req.body;
     const accessToken = req.user.accessToken;
     const linkedInId = req.user.id;
 
     try {
-        console.log('Humanizing content for LinkedIn...');
-        const humanizedText = await humanizeForLinkedIn(headline, fullContent, originalUrl);
+        let imageUrlToUpload = originalImage;
+
+        if (imageSource === 'ai') {
+            console.log(`Generating AI image with size ${imageSize}...`);
+            imageUrlToUpload = await generateAiImage(content, imageSize);
+        }
 
         console.log('Uploading image to LinkedIn...');
-        const imageUrn = await uploadImageToLinkedIn(accessToken, linkedInId, image);
+        const imageUrn = await uploadImageToLinkedIn(accessToken, linkedInId, imageUrlToUpload);
 
         console.log('Posting to LinkedIn feed...');
-        await createLinkedInPost(accessToken, linkedInId, humanizedText, imageUrn, originalUrl, headline);
+        await createLinkedInPost(accessToken, linkedInId, content, imageUrn, originalUrl, headline);
 
         res.status(200).json({ message: 'Successfully posted to LinkedIn!' });
 
@@ -143,30 +160,53 @@ app.post('/api/share/linkedin', ensureAuthenticated, async (req, res) => {
 
 // --- LinkedIn Sharing Helper Functions ---
 
-async function humanizeForLinkedIn(headline, content, url) {
+async function humanizeForLinkedIn(headline, content, url, includeBlogName, includeBlogLink) {
+    let userPrompt = `Headline: ${headline}\n\nContent: ${content.substring(0, 1500)}`;
+    if (includeBlogName) {
+        userPrompt += `\n\nSource: TechUp`; // Or your blog's name
+    }
+    if (includeBlogLink) {
+        userPrompt += `\n\nOriginal Source: ${url}`;
+    }
+
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4", // Using a more advanced model for better results
+            model: "gpt-4",
             messages: [{
                 role: "system",
-                content: "You are a social media manager specializing in creating engaging LinkedIn posts. The user will provide a tech article's headline and content. Your job is to create a compelling and professional LinkedIn post. The post should start with a strong hook, include 2-3 key takeaways from the content, mention the original source, and include relevant hashtags. The tone should be insightful and professional.",
+                content: "You are a social media manager creating an engaging LinkedIn post from a tech article. Create a compelling post with a strong hook, 2-3 key takeaways, and relevant hashtags. The tone should be insightful and professional.",
             }, { 
                 role: "user",
-                content: `Headline: ${headline}\n\nContent: ${content.substring(0, 1500)}\n\nOriginal Source: ${url}`,
+                content: userPrompt,
             }],
         });
         return response.choices[0].message.content;
     } catch (error) {
         console.error('OpenAI API Error during humanization:', error);
-        // Fallback to a simple format if OpenAI fails
-        return `${headline}\n\nRead more at: ${url}\n\n#Tech #Innovation`;
+        return `Error generating content. Please try again.`;
+    }
+}
+
+async function generateAiImage(content, size) {
+    try {
+        const response = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: `Create a visually appealing, professional image for a LinkedIn post about the following content: ${content.substring(0, 1000)}`,
+            n: 1,
+            size: size,
+        });
+        return response.data[0].url;
+    } catch (error) {
+        console.error('DALL-E API Error:', error);
+        // Return a placeholder if image generation fails
+        return `https://placehold.co/${size.replace('x', '/')}/21262d/8b949e?text=Image+Gen+Failed`;
     }
 }
 
 async function uploadImageToLinkedIn(accessToken, linkedInId, imageUrl) {
-    if (!imageUrl || imageUrl.startsWith('https://placehold.co')) {
-        console.log('Skipping image upload for placeholder.');
-        return null; // Don't upload placeholder images
+    if (!imageUrl || imageUrl.includes('placehold.co')) {
+        console.log('Skipping image upload for placeholder or failed generation.');
+        return null;
     }
 
     // 1. Register the upload
@@ -193,7 +233,7 @@ async function uploadImageToLinkedIn(accessToken, linkedInId, imageUrl) {
     await axios.put(uploadUrl, imageResponse.data, {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'image/jpeg' // Assuming JPEG, adjust if needed
+            'Content-Type': 'image/png' // DALL-E returns PNGs
         }
     });
 
@@ -207,12 +247,8 @@ async function createLinkedInPost(accessToken, linkedInId, text, imageUrn, origi
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {
                 "shareCommentary": { "text": text },
-                "shareMediaCategory": "ARTICLE",
-                "media": [{
-                    "status": "READY",
-                    "originalUrl": originalUrl,
-                    "title": { "text": headline }
-                }]
+                "shareMediaCategory": "NONE", // Default to NONE
+                "media": []
             }
         },
         "visibility": {
@@ -220,12 +256,21 @@ async function createLinkedInPost(accessToken, linkedInId, text, imageUrn, origi
         }
     };
 
-    // Add image to the post if it was uploaded successfully
+    // Add image or article link to the post
     if (imageUrn) {
         postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = "IMAGE";
-        postBody.specificContent["com.linkedin.ugc.ShareContent"].media[0].media = imageUrn;
+        postBody.specificContent["com.linkedin.ugc.ShareContent"].media.push({
+            "status": "READY",
+            "media": imageUrn
+        });
+    } else if (originalUrl) {
+        postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = "ARTICLE";
+        postBody.specificContent["com.linkedin.ugc.ShareContent"].media.push({
+            "status": "READY",
+            "originalUrl": originalUrl,
+            "title": { "text": headline }
+        });
     }
-
 
     await axios.post('https://api.linkedin.com/v2/ugcPosts', postBody, {
         headers: {
