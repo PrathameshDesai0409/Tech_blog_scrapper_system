@@ -12,11 +12,13 @@ const OpenAI = require('openai');
 const session = require('express-session');
 const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2').Strategy;
+const sharp = require('sharp');
 
 const runScraper = require('./scripts/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const LOGO_PATH = path.join(__dirname, 'public', 'logo', 'logo.png');
 
 // --- OpenAI Configuration ---
 const openai = new OpenAI({
@@ -44,15 +46,11 @@ passport.use('linkedin', new OAuth2Strategy({
     state: true
 },
 async function(accessToken, refreshToken, params, profile, done) {
-    // The `profile` argument is empty with this strategy.
-    // We need to fetch it manually using the accessToken.
     try {
         const userinfoResponse = await axios.get('https://api.linkedin.com/v2/userinfo', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-
         const userProfile = userinfoResponse.data;
-        // The user's unique LinkedIn ID is in the 'sub' field with OIDC
         const user = { id: userProfile.sub, accessToken: accessToken };
         return done(null, user);
     } catch (error) {
@@ -69,9 +67,7 @@ passport.deserializeUser(function(obj, done) {
 });
 
 // --- Middleware ---
-// To parse JSON bodies for POST requests
 app.use(express.json());
-// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 
@@ -81,34 +77,24 @@ app.get('/auth/linkedin', passport.authenticate('linkedin'));
 app.get('/auth/linkedin/callback',
   passport.authenticate('linkedin', { failureRedirect: '/' }),
   function(req, res) {
-    // Successful authentication. The user is logged in.
-    // This window can be closed, and the user can try sharing again.
     res.send('<script>window.opener.location.reload(); window.close();</script>');
   }
 );
 
-// Middleware to ensure a user is authenticated
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
+    if (req.isAuthenticated()) { return next(); }
     res.status(401).json({ message: 'User not authenticated. Please login.' });
 }
 
 
 // --- API Endpoints ---
-
-// Endpoint to provide summarized stories to the frontend
 app.get('/api/stories', (req, res) => {
     const summaryFilePath = path.join(__dirname, 'data', 'summary.json');
-
     fs.readFile(summaryFilePath, 'utf8', (err, data) => {
         if (err) {
             if (err.code === 'ENOENT') {
-                console.log('summary.json not found. Sending empty structure to frontend.');
                 return res.json({ business: {}, marketing: {}, ai: {} });
             }
-            console.error('Error reading summary file:', err);
             return res.status(500).send('Error loading story data.');
         }
         res.setHeader('Content-Type', 'application/json');
@@ -116,41 +102,53 @@ app.get('/api/stories', (req, res) => {
     });
 });
 
-// Endpoint to generate a preview of the LinkedIn post
 app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
-    const { headline, fullContent, originalUrl, includeBlogName, includeBlogLink } = req.body;
+    console.log('--- Received request for /api/share/preview ---');
+    console.log('Request Body:', req.body);
+
+    const { headline, fullContent, originalUrl, includeBlogName, includeBlogLink, imageSource, imageSize, originalImage, includeLogo } = req.body;
 
     try {
         const humanizedText = await humanizeForLinkedIn(headline, fullContent, originalUrl, includeBlogName, includeBlogLink);
-        res.status(200).json({ previewText: humanizedText });
+        
+        let imageUrlToPreview = originalImage;
+        console.log(`Initial imageUrlToPreview: ${imageUrlToPreview}`);
+
+        if (imageSource === 'ai') {
+            console.log('Image source is AI. Generating AI image...');
+            imageUrlToPreview = await generateAiImage(humanizedText, imageSize);
+            console.log(`AI-generated image URL: ${imageUrlToPreview}`);
+        }
+
+        if (includeLogo) {
+            console.log('includeLogo is true. Adding logo to image...');
+            imageUrlToPreview = await addLogoToImage(imageUrlToPreview, LOGO_PATH);
+        } else {
+            console.log('includeLogo is false. Skipping logo addition.');
+        }
+
+        console.log(`Final previewImageUrl: ${imageUrlToPreview.substring(0, 100)}...`);
+
+        res.status(200).json({ 
+            previewText: humanizedText,
+            previewImageUrl: imageUrlToPreview
+        });
+
     } catch (error) {
         console.error('Error generating preview:', error);
         res.status(500).json({ message: 'Failed to generate preview.' });
     }
 });
 
-// Endpoint to share a story on LinkedIn
 app.post('/api/share/post', ensureAuthenticated, async (req, res) => {
-    const { content, imageSource, imageSize, originalImage, originalUrl, headline } = req.body;
+    const { content, imageUrl, originalUrl, headline } = req.body;
     const accessToken = req.user.accessToken;
     const linkedInId = req.user.id;
 
     try {
-        let imageUrlToUpload = originalImage;
-
-        if (imageSource === 'ai') {
-            console.log(`Generating AI image with size ${imageSize}...`);
-            imageUrlToUpload = await generateAiImage(content, imageSize);
-        }
-
-        console.log('Uploading image to LinkedIn...');
-        const imageUrn = await uploadImageToLinkedIn(accessToken, linkedInId, imageUrlToUpload);
-
-        console.log('Posting to LinkedIn feed...');
+        const imageUrn = await uploadImageToLinkedIn(accessToken, linkedInId, imageUrl);
         await createLinkedInPost(accessToken, linkedInId, content, imageUrn, originalUrl, headline);
-
         res.status(200).json({ message: 'Successfully posted to LinkedIn!' });
-
     } catch (error) {
         console.error('Error sharing to LinkedIn:', error.response ? error.response.data : error.message);
         res.status(500).json({ message: 'Failed to share on LinkedIn.' });
@@ -158,7 +156,44 @@ app.post('/api/share/post', ensureAuthenticated, async (req, res) => {
 });
 
 
-// --- LinkedIn Sharing Helper Functions ---
+// --- Image & Text Helper Functions ---
+
+async function addLogoToImage(baseImageUrl, logoPath) {
+    console.log('--- Entering addLogoToImage function ---');
+    try {
+        console.log(`Base image URL: ${baseImageUrl}`);
+        const baseImageResponse = await axios.get(baseImageUrl, { responseType: 'arraybuffer' });
+        const baseImageBuffer = Buffer.from(baseImageResponse.data, 'binary');
+        console.log('Successfully downloaded base image and created buffer.');
+
+        const logoBuffer = fs.readFileSync(logoPath);
+        console.log('Successfully read logo file and created buffer.');
+
+        const baseImage = sharp(baseImageBuffer);
+        const metadata = await baseImage.metadata();
+
+        const logoWidth = Math.floor(metadata.width * 0.15);
+        console.log(`Resizing logo to width: ${logoWidth}`);
+        const resizedLogoBuffer = await sharp(logoBuffer).resize(logoWidth).toBuffer();
+
+        const margin = Math.floor(metadata.width * 0.02);
+        console.log(`Compositing logo with margin: ${margin}`);
+        const finalImageBuffer = await baseImage
+            .composite([{
+                input: resizedLogoBuffer,
+                top: margin,
+                left: margin
+            }])
+            .toBuffer();
+
+        const finalImageURI = `data:image/png;base64,${finalImageBuffer.toString('base64')}`;
+        console.log('--- Successfully composited logo. Returning base64 URI. ---');
+        return finalImageURI;
+    } catch (error) {
+        console.error('Error in addLogoToImage:', error);
+        return baseImageUrl; // Return original image if logo overlay fails
+    }
+}
 
 async function humanizeForLinkedIn(headline, content, url, includeBlogName, includeBlogLink) {
     let userPrompt = `Headline: ${headline}\n\nContent: ${content.substring(0, 1500)}`;
@@ -188,28 +223,36 @@ async function humanizeForLinkedIn(headline, content, url, includeBlogName, incl
 }
 
 async function generateAiImage(content, size) {
+    console.log(`Generating AI image with size ${size}...`);
     try {
         const response = await openai.images.generate({
             model: "dall-e-3",
-            prompt: `Create a visually appealing, professional image for a LinkedIn post about the following content: ${content.substring(0, 1000)}`,
+            prompt: `Create a visually appealing, professional, and abstract image suitable for a LinkedIn post. The image should be thematically related to the following content, but it must not contain any text, words, or letters. Content: ${content.substring(0, 1000)}`,
             n: 1,
-            size: size,
+            size: "1024x1024", // Hardcoded to a valid size
         });
         return response.data[0].url;
     } catch (error) {
         console.error('DALL-E API Error:', error);
-        // Return a placeholder if image generation fails
-        return `https://placehold.co/${size.replace('x', '/')}/21262d/8b949e?text=Image+Gen+Failed`;
+        return `https://placehold.co/1024x1024/21262d/8b949e?text=Image+Gen+Failed`;
     }
 }
 
+// --- LinkedIn Sharing Helper Functions ---
+
 async function uploadImageToLinkedIn(accessToken, linkedInId, imageUrl) {
     if (!imageUrl || imageUrl.includes('placehold.co')) {
-        console.log('Skipping image upload for placeholder or failed generation.');
         return null;
     }
 
-    // 1. Register the upload
+    let imageBuffer;
+    if (imageUrl.startsWith('data:image')) {
+        imageBuffer = Buffer.from(imageUrl.split(',')[1], 'base64');
+    } else {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        imageBuffer = Buffer.from(response.data, 'binary');
+    }
+
     const registerUploadResponse = await axios.post(
         'https://api.linkedin.com/v2/assets?action=registerUpload',
         {
@@ -228,12 +271,10 @@ async function uploadImageToLinkedIn(accessToken, linkedInId, imageUrl) {
     const uploadUrl = registerUploadResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
     const imageUrn = registerUploadResponse.data.value.asset;
 
-    // 2. Upload the image
-    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    await axios.put(uploadUrl, imageResponse.data, {
+    await axios.put(uploadUrl, imageBuffer, {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'image/png' // DALL-E returns PNGs
+            'Content-Type': 'image/png'
         }
     });
 
@@ -282,7 +323,6 @@ async function createLinkedInPost(accessToken, linkedInId, text, imageUrn, origi
 
 
 // --- Automated Cron Job ---
-console.log('Scheduling scraper job to run every 12 hours.');
 cron.schedule('0 */12 * * *', () => {
     console.log('--- Running scheduled scraper job ---');
     runScraper().catch(console.error);

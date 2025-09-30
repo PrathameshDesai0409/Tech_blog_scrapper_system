@@ -17,7 +17,7 @@ from openai import OpenAI
 # --- THIS IS THE CHANGE ---
 # Paste your OpenAI API key directly here.
 # WARNING: Do not share this file publicly with your key inside.
-API_KEY = "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" 
+API_KEY = "" 
 
 client = None
 if not API_KEY:

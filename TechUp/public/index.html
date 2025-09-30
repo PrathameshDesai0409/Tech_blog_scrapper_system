@@ -10,6 +10,8 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
         :root {
             --primary-bg: #0d1117;
             --secondary-bg: #161b22;
@@ -19,9 +21,6 @@
             --accent: #58a6ff;
             --border-color: #30363d;
         }
-
-        /* --- Basic Setup & Fonts --- */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
         * {
             box-sizing: border-box;
@@ -547,6 +546,13 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Include Logo?</label>
+                    <div class="btn-group" id="include-logo">
+                        <button class="btn active" data-value="true">Yes</button>
+                        <button class="btn" data-value="false">No</button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>Post Image</label>
                     <div class="btn-group" id="image-source">
                         <button class="btn active" data-value="blog">From Blog</button>
@@ -556,14 +562,15 @@
                 <div class="form-group" id="image-size-options">
                     <label>AI Image Size</label>
                     <div class="btn-group" id="ai-image-size">
-                        <button class="btn active" data-value="480x690">480x690</button>
-                        <button class="btn" data-value="1200x628">1200x628</button>
-                        <button class="btn" data-value="1080x1080">1080x1080</button>
+                        <button class="btn active" data-value="1024x1024">Square (1024x1024)</button>
+                        <button class="btn" data-value="1024x1792">Portrait (1024x1792)</button>
+                        <button class="btn" data-value="1792x1024">Landscape (1792x1024)</button>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Post Preview</label>
                     <div id="preview-area">
+                        <img id="preview-image" src="" alt="Post image preview" style="width: 100%; border-radius: 8px; margin-bottom: 1rem; display: none;"/>
                         <div id="preview-content">Your generated post content will appear here...</div>
                     </div>
                 </div>
@@ -727,6 +734,7 @@
             const recreateBtn = document.getElementById('recreate-btn');
             const confirmShareBtn = document.getElementById('confirm-share-btn');
             const previewContent = document.getElementById('preview-content');
+            const previewImage = document.getElementById('preview-image');
             let activeStoryCard = null;
 
             // Close modal
@@ -766,11 +774,15 @@
                 if (!activeStoryCard) return;
 
                 previewContent.textContent = 'Generating preview...';
+                previewImage.style.display = 'none';
+                recreateBtn.disabled = true;
+
                 const options = getShareOptions();
                 const storyData = {
                     headline: activeStoryCard.dataset.headline,
                     fullContent: decodeURIComponent(activeStoryCard.dataset.fullContent),
                     originalUrl: activeStoryCard.querySelector('.source-link a').href,
+                    originalImage: activeStoryCard.querySelector('.story-image').src,
                     ...options
                 };
 
@@ -789,10 +801,14 @@
 
                     const data = await response.json();
                     previewContent.textContent = data.previewText;
+                    previewImage.src = data.previewImageUrl;
+                    previewImage.style.display = 'block';
 
                 } catch (error) {
                     previewContent.textContent = 'Error generating preview. Please try again.';
                     console.error('Preview error:', error);
+                } finally {
+                    recreateBtn.disabled = false;
                 }
             }
 
@@ -802,7 +818,7 @@
                 const options = getShareOptions();
                 const postData = {
                     content: previewContent.textContent,
-                    originalImage: activeStoryCard.querySelector('.story-image').src,
+                    imageUrl: previewImage.src, // Send the final image URL
                     originalUrl: activeStoryCard.querySelector('.source-link a').href,
                     headline: activeStoryCard.dataset.headline,
                     ...options
