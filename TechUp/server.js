@@ -1,7 +1,7 @@
+const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cron = require('node-cron');
-const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const OpenAI = require('openai');
@@ -63,7 +63,7 @@ passport.deserializeUser(function(obj, done) {
 });
 
 // --- Middleware ---
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
