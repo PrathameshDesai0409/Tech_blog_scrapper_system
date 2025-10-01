@@ -1,8 +1,4 @@
-// server.js - The heart of our backend.
-// This file sets up the Express server, defines our API endpoint,
-// and schedules the automated scraping job.
-
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cron = require('node-cron');
 const path = require('path');
@@ -129,7 +125,7 @@ app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
 
         console.log(`Final previewImageUrl: ${imageUrlToPreview.substring(0, 100)}...`);
 
-        res.status(200).json({ 
+        res.status(200).json({
             previewText: humanizedText,
             previewImageUrl: imageUrlToPreview
         });
@@ -288,7 +284,7 @@ async function createLinkedInPost(accessToken, linkedInId, text, imageUrn, origi
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {
                 "shareCommentary": { "text": text },
-                "shareMediaCategory": "NONE", // Default to NONE
+                "shareMediaCategory": "NONE", 
                 "media": []
             }
         },

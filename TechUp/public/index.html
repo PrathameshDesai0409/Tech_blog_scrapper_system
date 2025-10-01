@@ -10,7 +10,7 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
         :root {
             --primary-bg: #0d1117;
@@ -764,10 +764,11 @@
             function getShareOptions() {
                 const includeBlogName = document.querySelector('#include-blog-name .btn.active').dataset.value === 'true';
                 const includeBlogLink = document.querySelector('#include-blog-link .btn.active').dataset.value === 'true';
+                const includeLogo = document.querySelector('#include-logo .btn.active').dataset.value === 'true';
                 const imageSource = document.querySelector('#image-source .btn.active').dataset.value;
                 const imageSize = document.querySelector('#ai-image-size .btn.active').dataset.value;
 
-                return { includeBlogName, includeBlogLink, imageSource, imageSize };
+                return { includeBlogName, includeBlogLink, includeLogo, imageSource, imageSize };
             }
 
             async function generatePreview() {
@@ -883,103 +884,6 @@
                     await generatePreview(); // Generate initial preview
                 }
             });
-        });
-    </script>`;
-                    });
-
-                    if (storiesHTML) {
-                        subdomainWrapper.innerHTML += `
-                            <div class="swiper-slide">
-                                <!-- This is the container for a single vertical swiper -->
-                                <div class="swiper-container blog-swiper">
-                                    <div class="swiper-wrapper">${storiesHTML}</div>
-                                </div>
-                            </div>`;
-                    }
-                });
-
-                // --- SHOW THE FEED and INITIALIZE SWIPERS ---
-                app.style.display = 'none';
-                feedPage.classList.add('visible');
-                
-                // Initialize the main horizontal swiper for subdomains
-                subdomainSwiper = new Swiper('#subdomain-swiper', {
-                    direction: 'horizontal',
-                    loop: false,
-                    on: {
-                        slideChange: function () {
-                            const activeIndex = this.activeIndex;
-                            document.querySelectorAll('.subdomain-nav-item').forEach((item, index) => {
-                                item.classList.toggle('active', index === activeIndex);
-                            });
-                        }
-                    }
-                });
-
-                // *** THE CRITICAL FIX IS HERE ***
-                // We must loop through each vertical swiper container and initialize it individually.
-                document.querySelectorAll('.blog-swiper').forEach(swiperElement => {
-                    new Swiper(swiperElement, {
-                        direction: 'vertical',
-                        loop: false,
-                        nested: true, // Let Swiper know this is a nested instance
-                    });
-                });
-            }
-            
-            // --- SHARE MODAL LOGIC ---
-            const shareModal = document.getElementById('share-modal');
-            const closeModalBtn = shareModal.querySelector('.close-btn');
-            const imageSourceGroup = shareModal.querySelector('#image-source');
-            const imageSizeOptions = shareModal.querySelector('#image-size-options');
-            let activeStoryCard = null;
-
-            // Close modal
-            closeModalBtn.addEventListener('click', () => {
-                shareModal.style.display = 'none';
-            });
-            window.addEventListener('click', (event) => {
-                if (event.target == shareModal) {
-                    shareModal.style.display = 'none';
-                }
-            });
-
-            // Handle button group clicks
-            shareModal.querySelectorAll('.btn-group').forEach(group => {
-                group.addEventListener('click', (event) => {
-                    if (event.target.classList.contains('btn')) {
-                        // Remove active class from siblings
-                        Array.from(event.target.parentElement.children).forEach(child => {
-                            child.classList.remove('active');
-                        });
-                        // Add active class to the clicked button
-                        event.target.classList.add('active');
-
-                        // Special handling for image source
-                        if (group.id === 'image-source') {
-                            const source = event.target.dataset.value;
-                            if (source === 'ai') {
-                                imageSizeOptions.style.display = 'block';
-                            } else {
-                                imageSizeOptions.style.display = 'none';
-                            }
-                        }
-                    }
-                });
-            });
-
-            // 5. Handle LinkedIn Share Button Click (Event Delegation)
-            document.body.addEventListener('click', async function(event) {
-                const shareBtn = event.target.closest('.linkedin-share-btn');
-                if (shareBtn) {
-                    activeStoryCard = shareBtn.closest('.story-card');
-                    // TODO: Generate initial preview
-                    shareModal.style.display = 'block';
-                }
-            });
-
-            // TODO: Add logic for 'Recreate' and 'Confirm & Post' buttons
-
         });
     </script>
 </body>
