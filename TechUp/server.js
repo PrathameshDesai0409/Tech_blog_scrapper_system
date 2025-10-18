@@ -38,7 +38,7 @@ passport.use('linkedin', new OAuth2Strategy({
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/linkedin/callback",
-    scope: ['openid', 'profile', 'email', 'w_member_social'],
+    scope: ['openid', 'profile', 'email', 'w_member_social', 'r_organization_social'],
     state: true
 },
 async function(accessToken, refreshToken, params, profile, done) {
@@ -47,7 +47,7 @@ async function(accessToken, refreshToken, params, profile, done) {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const userProfile = userinfoResponse.data;
-        const user = { id: userProfile.sub, accessToken: accessToken };
+        const user = { id: userProfile.sub, personUrn: `urn:li:person:${userProfile.sub}`, accessToken: accessToken };
         return done(null, user);
     } catch (error) {
         return done(error);
@@ -84,6 +84,31 @@ function ensureAuthenticated(req, res, next) {
 
 
 // --- API Endpoints ---
+app.get('/api/linkedin/organizations', ensureAuthenticated, async (req, res) => {
+    const accessToken = req.user.accessToken;
+    const personUrn = req.user.personUrn;
+
+    try {
+        const response = await axios.get(
+            'https://api.linkedin.com/v2/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(*,organization~(*)))',
+            { headers: { 'Authorization': `Bearer ${accessToken}` } }
+        );
+
+        const organizations = response.data.elements.map(element => ({
+            id: element.organization,
+            name: element['organization~'].localizedName
+        }));
+
+        organizations.unshift({ id: personUrn, name: 'Personal Profile' });
+
+        res.json(organizations);
+
+    } catch (error) {
+        console.error('Error fetching LinkedIn organizations:', error.response ? error.response.data : error.message);
+        res.status(500).json({ message: 'Failed to fetch LinkedIn organizations.' });
+    }
+});
+
 app.get('/api/stories', (req, res) => {
     const summaryFilePath = path.join(__dirname, 'data', 'summary.json');
     fs.readFile(summaryFilePath, 'utf8', (err, data) => {
@@ -137,13 +162,13 @@ app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
 });
 
 app.post('/api/share/post', ensureAuthenticated, async (req, res) => {
-    const { content, imageUrl, originalUrl, headline } = req.body;
+    const { content, imageUrl, originalUrl, headline, authorUrn } = req.body;
     const accessToken = req.user.accessToken;
-    const linkedInId = req.user.id;
+    const personUrn = req.user.personUrn;
 
     try {
-        const imageUrn = await uploadImageToLinkedIn(accessToken, linkedInId, imageUrl);
-        await createLinkedInPost(accessToken, linkedInId, content, imageUrn, originalUrl, headline);
+        const imageUrn = await uploadImageToLinkedIn(accessToken, personUrn.split(':').pop(), imageUrl);
+        await createLinkedInPost(accessToken, personUrn, content, imageUrn, originalUrl, headline, authorUrn);
         res.status(200).json({ message: 'Successfully posted to LinkedIn!' });
     } catch (error) {
         console.error('Error sharing to LinkedIn:', error.response ? error.response.data : error.message);
@@ -277,9 +302,9 @@ async function uploadImageToLinkedIn(accessToken, linkedInId, imageUrl) {
     return imageUrn;
 }
 
-async function createLinkedInPost(accessToken, linkedInId, text, imageUrn, originalUrl, headline) {
+async function createLinkedInPost(accessToken, personUrn, text, imageUrn, originalUrl, headline, authorUrn) {
     const postBody = {
-        "author": `urn:li:person:${linkedInId}`,
+        "author": authorUrn || personUrn,
         "lifecycleState": "PUBLISHED",
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {

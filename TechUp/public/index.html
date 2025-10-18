@@ -440,6 +440,15 @@
             background-color: var(--accent);
             color: var(--primary-bg);
         }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+        }
 
 
         /* --- Responsive Adjustments --- */
@@ -567,6 +576,12 @@
                         <button class="btn" data-value="1792x1024">Landscape (1792x1024)</button>
                     </div>
                 </div>
+                
+                <div class="form-group" id="linkedin-page-select-group" style="display: none;">
+                    <label for="linkedin-page-select">Post To</label>
+                    <select id="linkedin-page-select" class="form-control"></select>
+                </div>
+
                 <div class="form-group">
                     <label>Post Preview</label>
                     <div id="preview-area">
@@ -590,18 +605,15 @@
             const domainCards = document.querySelectorAll('.domain-card');
             const backToHomeBtn = document.getElementById('back-to-home');
             let subdomainSwiper = null;
-            let storyData = {}; // This will hold our data from the backend
+            let storyData = {};
 
-            // --- FETCH DATA FROM OUR BACKEND ---
             try {
                 const response = await fetch('/api/stories');
                 storyData = await response.json();
             } catch (error) {
                 console.error("Failed to fetch stories:", error);
-                // In a real app, you'd show an error message to the user
             }
 
-            // 1. Handle Splash Screen
             setTimeout(() => {
                 splashScreen.style.opacity = '0';
                 app.style.display = 'flex';
@@ -611,7 +623,6 @@
                 }, 500);
             }, 3000);
 
-            // 2. Handle Domain Card Clicks
             domainCards.forEach(card => {
                 card.addEventListener('click', () => {
                     const domain = card.dataset.domain;
@@ -619,7 +630,6 @@
                 });
             });
 
-            // 3. Handle Back Button
             backToHomeBtn.addEventListener('click', () => {
                 feedPage.classList.remove('visible');
                 app.style.display = 'flex';
@@ -629,7 +639,6 @@
                 }
             });
 
-            // 4. Function to Build and Show the Feed
             function showFeed(domain) {
                 const subdomainWrapper = document.getElementById('subdomain-wrapper');
                 const subdomainNav = document.getElementById('subdomain-nav');
@@ -645,9 +654,7 @@
 
                 const subdomains = Object.keys(domainData);
 
-                // --- DYNAMICALLY BUILD HTML for the SWIPERS ---
                 subdomains.forEach((subdomainName, index) => {
-                    // Add nav item
                     const navItem = document.createElement('div');
                     navItem.classList.add('subdomain-nav-item');
                     navItem.textContent = subdomainName;
@@ -689,7 +696,6 @@
                     if (storiesHTML) {
                         subdomainWrapper.innerHTML += `
                             <div class="swiper-slide">
-                                <!-- This is the container for a single vertical swiper -->
                                 <div class="swiper-container blog-swiper">
                                     <div class="swiper-wrapper">${storiesHTML}</div>
                                 </div>
@@ -697,11 +703,9 @@
                     }
                 });
 
-                // --- SHOW THE FEED and INITIALIZE SWIPERS ---
                 app.style.display = 'none';
                 feedPage.classList.add('visible');
                 
-                // Initialize the main horizontal swiper for subdomains
                 subdomainSwiper = new Swiper('#subdomain-swiper', {
                     direction: 'horizontal',
                     loop: false,
@@ -715,47 +719,37 @@
                     }
                 });
 
-                // *** THE CRITICAL FIX IS HERE ***
-                // We must loop through each vertical swiper container and initialize it individually.
                 document.querySelectorAll('.blog-swiper').forEach(swiperElement => {
                     new Swiper(swiperElement, {
                         direction: 'vertical',
                         loop: false,
-                        nested: true, // Let Swiper know this is a nested instance
+                        nested: true,
                     });
                 });
             }
             
-            // --- SHARE MODAL LOGIC ---
             const shareModal = document.getElementById('share-modal');
             const closeModalBtn = shareModal.querySelector('.close-btn');
-            const imageSourceGroup = shareModal.querySelector('#image-source');
-            const imageSizeOptions = shareModal.querySelector('#image-size-options');
             const recreateBtn = document.getElementById('recreate-btn');
             const confirmShareBtn = document.getElementById('confirm-share-btn');
             const previewContent = document.getElementById('preview-content');
             const previewImage = document.getElementById('preview-image');
+            const linkedinPageSelectGroup = document.getElementById('linkedin-page-select-group');
+            const linkedinPageSelect = document.getElementById('linkedin-page-select');
             let activeStoryCard = null;
 
-            // Close modal
-            closeModalBtn.addEventListener('click', () => {
-                shareModal.style.display = 'none';
-            });
+            closeModalBtn.addEventListener('click', () => { shareModal.style.display = 'none'; });
             window.addEventListener('click', (event) => {
-                if (event.target == shareModal) {
-                    shareModal.style.display = 'none';
-                }
+                if (event.target == shareModal) { shareModal.style.display = 'none'; }
             });
 
-            // Handle button group clicks
             shareModal.querySelectorAll('.btn-group').forEach(group => {
                 group.addEventListener('click', (event) => {
                     if (event.target.classList.contains('btn')) {
                         Array.from(event.target.parentElement.children).forEach(child => child.classList.remove('active'));
                         event.target.classList.add('active');
-
                         if (group.id === 'image-source') {
-                            imageSizeOptions.style.display = event.target.dataset.value === 'ai' ? 'block' : 'none';
+                            document.getElementById('image-size-options').style.display = event.target.dataset.value === 'ai' ? 'block' : 'none';
                         }
                     }
                 });
@@ -767,94 +761,98 @@
                 const includeLogo = document.querySelector('#include-logo .btn.active').dataset.value === 'true';
                 const imageSource = document.querySelector('#image-source .btn.active').dataset.value;
                 const imageSize = document.querySelector('#ai-image-size .btn.active').dataset.value;
+                const authorUrn = linkedinPageSelect.value;
 
-                return { includeBlogName, includeBlogLink, includeLogo, imageSource, imageSize };
+                return { includeBlogName, includeBlogLink, includeLogo, imageSource, imageSize, authorUrn };
             }
 
             async function generatePreview() {
                 if (!activeStoryCard) return;
-
                 previewContent.textContent = 'Generating preview...';
                 previewImage.style.display = 'none';
                 recreateBtn.disabled = true;
-
-                const options = getShareOptions();
                 const storyData = {
                     headline: activeStoryCard.dataset.headline,
                     fullContent: decodeURIComponent(activeStoryCard.dataset.fullContent),
                     originalUrl: activeStoryCard.querySelector('.source-link a').href,
                     originalImage: activeStoryCard.querySelector('.story-image').src,
-                    ...options
+                    ...getShareOptions()
                 };
-
                 try {
                     const response = await fetch('/api/share/preview', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(storyData)
                     });
-
                     if (response.status === 401) {
                         handleAuthRedirect();
-                        return;
+                        return false;
                     }
                     if (!response.ok) throw new Error('Failed to generate preview.');
-
                     const data = await response.json();
                     previewContent.textContent = data.previewText;
                     previewImage.src = data.previewImageUrl;
                     previewImage.style.display = 'block';
-
+                    return true;
                 } catch (error) {
                     previewContent.textContent = 'Error generating preview. Please try again.';
                     console.error('Preview error:', error);
+                    return false;
                 } finally {
                     recreateBtn.disabled = false;
                 }
             }
 
+            async function fetchAndPopulateLinkedinPages() {
+                try {
+                    const response = await fetch('/api/linkedin/organizations');
+                    if (!response.ok) {
+                        if (response.status === 401) handleAuthRedirect();
+                        throw new Error('Could not fetch LinkedIn pages.');
+                    }
+                    const pages = await response.json();
+                    linkedinPageSelect.innerHTML = '';
+                    pages.forEach(page => {
+                        const option = document.createElement('option');
+                        option.value = page.id;
+                        option.textContent = page.name;
+                        linkedinPageSelect.appendChild(option);
+                    });
+                    linkedinPageSelectGroup.style.display = 'block';
+                } catch (error) {
+                    console.error('Error fetching LinkedIn pages:', error);
+                    linkedinPageSelectGroup.style.display = 'none';
+                }
+            }
+
             async function confirmAndPost() {
                 if (!activeStoryCard) return;
-
-                const options = getShareOptions();
                 const postData = {
                     content: previewContent.textContent,
-                    imageUrl: previewImage.src, // Send the final image URL
+                    imageUrl: previewImage.src,
                     originalUrl: activeStoryCard.querySelector('.source-link a').href,
                     headline: activeStoryCard.dataset.headline,
-                    ...options
+                    ...getShareOptions()
                 };
-
                 confirmShareBtn.disabled = true;
                 confirmShareBtn.textContent = 'Posting...';
-
                 try {
                     const response = await fetch('/api/share/post', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(postData)
                     });
-
                     if (response.status === 401) {
                         handleAuthRedirect();
                         return;
                     }
                     if (!response.ok) {
-                        const contentType = response.headers.get("content-type");
-                        if (contentType && contentType.indexOf("application/json") !== -1) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to post.');
-                        } else {
-                            const errorText = await response.text();
-                            console.error("Server returned non-JSON response:", errorText);
-                            throw new Error("Server returned an unexpected response. See browser console for details.");
-                        }
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to post.');
                     }
-
                     const result = await response.json();
                     alert(result.message || 'Successfully posted!');
                     shareModal.style.display = 'none';
-
                 } catch (error) {
                     alert(`Error posting: ${error.message}`);
                 } finally {
@@ -868,20 +866,27 @@
                 const width = 600, height = 700;
                 const left = (window.innerWidth / 2) - (width / 2);
                 const top = (window.innerHeight / 2) - (height / 2);
-                window.open('/auth/linkedin', 'linkedinAuth', `width=${width},height=${height},top=${top},left=${left}`);
+                const authWindow = window.open('/auth/linkedin', 'linkedinAuth', `width=${width},height=${height},top=${top},left=${left}`);
+                const checkWindow = setInterval(() => {
+                    if (authWindow.closed) {
+                        clearInterval(checkWindow);
+                        fetchAndPopulateLinkedinPages();
+                    }
+                }, 500);
             }
 
-            // Event Listeners
             recreateBtn.addEventListener('click', generatePreview);
             confirmShareBtn.addEventListener('click', confirmAndPost);
 
-            // 5. Handle LinkedIn Share Button Click (Event Delegation)
             document.body.addEventListener('click', async function(event) {
                 const shareBtn = event.target.closest('.linkedin-share-btn');
                 if (shareBtn) {
                     activeStoryCard = shareBtn.closest('.story-card');
                     shareModal.style.display = 'block';
-                    await generatePreview(); // Generate initial preview
+                    const isAuthenticated = await generatePreview(); 
+                    if (isAuthenticated) {
+                        await fetchAndPopulateLinkedinPages();
+                    }
                 }
             });
         });
