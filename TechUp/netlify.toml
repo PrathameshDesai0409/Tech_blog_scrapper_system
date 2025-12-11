@@ -1,6 +1,6 @@
 [build]
   # This command runs the scraper to generate summary.json before deploying
-  command = "node scripts/scraper.js"
+  command = "mkdir -p data && node scripts/scraper.js"
   functions = "netlify/functions"
   publish = "public"
 
