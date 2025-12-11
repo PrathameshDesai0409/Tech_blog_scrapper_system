@@ -84,13 +84,26 @@ function ensureAuthenticated(req, res, next) {
 
 // --- API Endpoints ---
 app.get('/api/stories', (req, res) => {
-    // Use path.resolve for better compatibility with serverless environments
-    const summaryFilePath = path.resolve('data', 'summary.json');
+    // Define possible paths where the file might be located in the serverless environment
+    const possiblePaths = [
+        path.resolve('data', 'summary.json'),
+        path.join(process.cwd(), 'data', 'summary.json'),
+        path.join(__dirname, 'data', 'summary.json'),
+        path.join(__dirname, '..', 'data', 'summary.json') // Common in bundled functions
+    ];
+
+    // Find the first path that actually exists
+    const summaryFilePath = possiblePaths.find(p => fs.existsSync(p));
+
+    if (!summaryFilePath) {
+        console.error('Error: summary.json not found in any expected location.');
+        console.error('Checked paths:', possiblePaths);
+        return res.json({ business: {}, marketing: {}, ai: {} });
+    }
+
     fs.readFile(summaryFilePath, 'utf8', (err, data) => {
         if (err) {
-            if (err.code === 'ENOENT') {
-                return res.json({ business: {}, marketing: {}, ai: {} });
-            }
+            console.error('Error reading summary file:', err);
             return res.status(500).send('Error loading story data.');
         }
         res.setHeader('Content-Type', 'application/json');
