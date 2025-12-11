@@ -1,0 +1,19 @@
+[build]
+  # This command runs the scraper to generate summary.json before deploying
+  command = "node scripts/scraper.js"
+  functions = "netlify/functions"
+  publish = "public"
+
+# This rule directs all requests to our Express app function
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[functions]
+  # Set a longer timeout for the main API function
+  "api" = { timeout = 25 }
+
+[functions."trigger-build"]
+  # This will run the trigger-build function every 12 hours
+  schedule = "0 */12 * * *"

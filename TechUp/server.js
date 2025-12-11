@@ -1,7 +1,6 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
-const cron = require('node-cron');
 const fs = require('fs');
 const axios = require('axios');
 const OpenAI = require('openai');
@@ -317,17 +316,4 @@ async function createLinkedInPost(accessToken, personUrn, text, imageUrn, origin
     });
 }
 
-
-// --- Automated Cron Job ---
-cron.schedule('0 */12 * * *', () => {
-    console.log('--- Running scheduled scraper job ---');
-    runScraper().catch(console.error);
-});
-
-
-// --- Start the Server ---
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Running initial scrape on server start...');
-    runScraper().catch(console.error);
-});
+module.exports = app;

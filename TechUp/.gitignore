@@ -4,5 +4,5 @@ Environment variables
 Dependencies
 /node_modules
 
-Data files (optional, but good practice if they get large)
-/data/summary.json
+# The summary file will be generated at build time and needs to be deployed.
+# /data/summary.json
