@@ -36,9 +36,9 @@ passport.use('linkedin', new OAuth2Strategy({
     authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
     tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
     clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/linkedin/callback",
-    scope: ['openid', 'profile', 'email', 'w_member_social', 'r_organization_social'],
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET, // Make sure you have a .env file with your actual callback URL
+    callbackURL: process.env.LINKEDIN_CALLBACK_URL || "http://localhost:3000/auth/linkedin/callback",
+    scope: ['openid', 'profile', 'email', 'w_member_social'],
     state: true
 },
 async function(accessToken, refreshToken, params, profile, done) {
@@ -84,31 +84,6 @@ function ensureAuthenticated(req, res, next) {
 
 
 // --- API Endpoints ---
-app.get('/api/linkedin/organizations', ensureAuthenticated, async (req, res) => {
-    const accessToken = req.user.accessToken;
-    const personUrn = req.user.personUrn;
-
-    try {
-        const response = await axios.get(
-            'https://api.linkedin.com/v2/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(*,organization~(*)))',
-            { headers: { 'Authorization': `Bearer ${accessToken}` } }
-        );
-
-        const organizations = response.data.elements.map(element => ({
-            id: element.organization,
-            name: element['organization~'].localizedName
-        }));
-
-        organizations.unshift({ id: personUrn, name: 'Personal Profile' });
-
-        res.json(organizations);
-
-    } catch (error) {
-        console.error('Error fetching LinkedIn organizations:', error.response ? error.response.data : error.message);
-        res.status(500).json({ message: 'Failed to fetch LinkedIn organizations.' });
-    }
-});
-
 app.get('/api/stories', (req, res) => {
     const summaryFilePath = path.join(__dirname, 'data', 'summary.json');
     fs.readFile(summaryFilePath, 'utf8', (err, data) => {
