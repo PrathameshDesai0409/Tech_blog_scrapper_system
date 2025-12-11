@@ -84,7 +84,8 @@ function ensureAuthenticated(req, res, next) {
 
 // --- API Endpoints ---
 app.get('/api/stories', (req, res) => {
-    const summaryFilePath = path.join(__dirname, 'data', 'summary.json');
+    // Use path.resolve for better compatibility with serverless environments
+    const summaryFilePath = path.resolve('data', 'summary.json');
     fs.readFile(summaryFilePath, 'utf8', (err, data) => {
         if (err) {
             if (err.code === 'ENOENT') {

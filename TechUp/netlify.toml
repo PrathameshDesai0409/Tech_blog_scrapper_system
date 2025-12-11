@@ -13,6 +13,8 @@
 [functions]
   # Set a longer timeout for the main API function
   "api" = { timeout = 25 }
+  # Ensure the generated data file is included in the function bundle
+  included_files = ["data/summary.json"]
 
 [functions."trigger-build"]
   # This will run the trigger-build function every 12 hours
