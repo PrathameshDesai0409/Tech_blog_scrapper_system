@@ -13,7 +13,6 @@ const runScraper = require('./scripts/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const LOGO_PATH = path.join(__dirname, 'public', 'logo', 'logo.png');
 
 // --- OpenAI Configuration ---
 const openai = new OpenAI({
@@ -131,12 +130,27 @@ app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
 
         if (includeLogo) {
             console.log('includeLogo is true. Adding logo to image...');
-            imageUrlToPreview = await addLogoToImage(imageUrlToPreview, LOGO_PATH);
+            // Define possible paths for the logo in serverless environment
+            const possibleLogoPaths = [
+                path.resolve('public', 'logo', 'logo.png'),
+                path.join(process.cwd(), 'public', 'logo', 'logo.png'),
+                path.join(__dirname, 'public', 'logo', 'logo.png'),
+                path.join(__dirname, '..', 'public', 'logo', 'logo.png')
+            ];
+            const resolvedLogoPath = possibleLogoPaths.find(p => fs.existsSync(p));
+
+            if (resolvedLogoPath) {
+                imageUrlToPreview = await addLogoToImage(imageUrlToPreview, resolvedLogoPath);
+            } else {
+                console.warn('Logo file not found. Skipping logo addition.');
+            }
         } else {
             console.log('includeLogo is false. Skipping logo addition.');
         }
 
-        console.log(`Final previewImageUrl: ${imageUrlToPreview.substring(0, 100)}...`);
+        if (imageUrlToPreview) {
+            console.log(`Final previewImageUrl: ${imageUrlToPreview.substring(0, 100)}...`);
+        }
 
         res.status(200).json({
             previewText: humanizedText,
