@@ -15,6 +15,7 @@
   "api" = { timeout = 25 }
   # Ensure the generated data file is included in the function bundle
   included_files = ["data/summary.json", "public/logo/logo.png"]
+  external_node_modules = ["sharp"]
 
 [functions."trigger-build"]
   # This will run the trigger-build function every 12 hours

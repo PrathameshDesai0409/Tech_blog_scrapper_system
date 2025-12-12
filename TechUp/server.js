@@ -229,7 +229,7 @@ async function humanizeForLinkedIn(headline, content, url, includeBlogName, incl
 
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-3.5-turbo",
             messages: [{
                 role: "system",
                 content: "You are a social media manager creating an engaging LinkedIn post from a tech article. Create a compelling post with a strong hook, 2-3 key takeaways, and relevant hashtags. The tone should be insightful and professional.",
