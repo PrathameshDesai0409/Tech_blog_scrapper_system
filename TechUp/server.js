@@ -9,6 +9,7 @@ const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2').Strategy;
 const sharp = require('sharp');
 const cors = require('cors');
+const cron = require('node-cron');
 
 const runScraper = require('./scripts/scraper');
 
@@ -362,6 +363,17 @@ async function createLinkedInPost(accessToken, personUrn, text, imageUrn, origin
         }
     });
 }
+
+// Schedule scraper to run every day at 5:00 PM
+cron.schedule('0 17 * * *', async () => {
+    console.log('--- Running scheduled scraper ---');
+    try {
+        await runScraper();
+        console.log('--- Scheduled scraper finished ---');
+    } catch (error) {
+        console.error('Error running scheduled scraper:', error);
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

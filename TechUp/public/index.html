@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TechUp</title>
     <!-- Swiper.js for swipe gestures -->
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -22,8 +22,9 @@
             --accent: #58a6ff;
             --accent-glow: rgba(88, 166, 255, 0.4);
             --border-color: #30363d;
-            --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
@@ -32,6 +33,8 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         html, body {
@@ -40,6 +43,7 @@
             background-color: var(--primary-bg);
             color: var(--text-primary);
             overflow: hidden;
+            overscroll-behavior: none;
         }
 
         /* --- Background & Atmosphere --- */
@@ -52,6 +56,7 @@
             z-index: -1;
             overflow: hidden;
             pointer-events: none;
+            contain: strict;
         }
 
         .mesh-gradient {
@@ -63,7 +68,8 @@
             background: radial-gradient(circle at 50% 50%, rgba(76, 29, 149, 0.15), transparent 60%),
                         radial-gradient(circle at 80% 20%, rgba(29, 78, 216, 0.15), transparent 50%),
                         radial-gradient(circle at 20% 80%, rgba(219, 39, 119, 0.15), transparent 50%);
-            filter: blur(60px);
+            filter: blur(80px);
+            will-change: transform;
             animation: meshShift 15s infinite alternate ease-in-out;
         }
 
@@ -80,7 +86,7 @@
             height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
             opacity: 0.07;
-            animation: noiseAnim 0.5s steps(5) infinite;
+            /* Animation disabled on mobile via JS/Media Query for performance, static by default */
         }
 
         @keyframes noiseAnim {
@@ -93,6 +99,7 @@
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(2px);
             border: 1px solid rgba(255, 255, 255, 0.05);
+            will-change: transform, opacity;
             animation: floatShape 20s infinite linear;
         }
 
@@ -116,6 +123,7 @@
             pointer-events: none;
             z-index: 9999;
             transition: opacity 0.3s ease;
+            mix-blend-mode: screen;
         }
 
         /* --- Splash Screen --- */
@@ -141,12 +149,13 @@
         #typing-text {
             font-size: 3rem;
             font-weight: 700;
-            color: var(--accent);
+            color: #fff;
             white-space: nowrap;
             overflow: hidden;
             border-right: .15em solid var(--accent);
             animation: typing 2.5s steps(8, end) forwards, blink-caret .75s step-end infinite;
             position: relative;
+            text-shadow: 2px 2px 0px rgba(88, 166, 255, 0.3);
         }
 
         /* Glitch Effect */
@@ -163,14 +172,14 @@
         }
         #typing-text::before {
             left: 2px;
-            text-shadow: -1px 0 #ff00c1;
+            text-shadow: -2px 0 #ff00c1;
             clip-path: inset(44% 0 61% 0);
             animation: glitch-anim 2s infinite linear alternate-reverse;
             display: none; /* Shown via JS briefly */
         }
         #typing-text::after {
             left: -2px;
-            text-shadow: -1px 0 #00fff9;
+            text-shadow: -2px 0 #00fff9;
             clip-path: inset(50% 0 30% 0);
             animation: glitch-anim 2s infinite linear alternate-reverse;
             display: none;
@@ -203,6 +212,17 @@
             pointer-events: none;
         }
 
+        /* Particle Burst Container */
+        #particle-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
         /* --- Main App Container --- */
         #app {
             display: none; /* Hidden initially */
@@ -211,7 +231,7 @@
             padding: 2rem 1rem;
             height: 100%;
             opacity: 0;
-            transition: opacity 0.5s ease-in;
+            transition: opacity 0.5s var(--ease-smooth), transform 0.5s var(--ease-smooth);
             z-index: 10;
         }
         
@@ -224,6 +244,7 @@
             font-weight: 700;
             margin-bottom: 2rem;
             color: var(--text-primary);
+            letter-spacing: -1px;
         }
 
         /* --- Home Page (Domain Selection) --- */
@@ -245,7 +266,7 @@
             border-radius: 12px;
             padding: 2rem;
             cursor: pointer;
-            transition: transform 0.1s ease-out, box-shadow 0.3s ease, border-color 0.3s ease;
+            transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s ease;
             color: var(--text-primary);
             display: flex;
             flex-direction: column;
@@ -258,6 +279,7 @@
             perspective: 1000px;
             opacity: 0; /* For staggered entrance */
             transform: translateY(20px);
+            will-change: transform, opacity;
         }
 
         /* Shimmer Effect */
@@ -293,6 +315,7 @@
             mask-composite: exclude;
             opacity: 0;
             transition: opacity 0.3s ease;
+            pointer-events: none;
         }
 
         .domain-card:hover {
@@ -301,6 +324,11 @@
         
         .domain-card:hover::after {
             opacity: 1;
+        }
+
+        .domain-card:active {
+            transform: scale(0.98) !important;
+            transition: transform 0.1s;
         }
 
         .domain-card h2 {
@@ -340,7 +368,7 @@
             z-index: 500;
             display: none;
             opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+            transition: opacity 0.4s var(--ease-smooth), transform 0.4s var(--ease-smooth);
             transform-origin: center;
         }
         
@@ -348,7 +376,7 @@
             display: block;
             opacity: 1;
         }
-        #feed-page.blur-in { animation: blurScaleIn 0.4s var(--ease-smooth); }
+        #feed-page.blur-in { animation: blurScaleIn 0.5s var(--ease-out-expo); }
 
         #feed-header {
             position: fixed;
@@ -373,6 +401,7 @@
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
             position: relative;
+            scroll-behavior: smooth;
         }
         #subdomain-nav::-webkit-scrollbar {
             display: none; /* Chrome, Safari, Opera */
@@ -387,12 +416,13 @@
             position: relative;
             transition: color 0.3s var(--ease-smooth), transform 0.2s;
             white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .subdomain-nav-item.active {
             color: var(--accent);
             text-shadow: 0 0 10px var(--accent-glow);
-            transform: scale(1.05);
+            font-weight: 700;
         }
 
         .swiper-container {
@@ -416,7 +446,8 @@
             height: 45%;
             object-fit: cover;
             background-color: var(--secondary-bg);
-            transform: scale(1.1); /* For parallax */
+            transform: scale(1.05); /* For parallax */
+            will-change: transform;
             transition: transform 0.5s ease-out;
         }
         
@@ -461,6 +492,7 @@
             transition: all 0.3s var(--ease-elastic);
             cursor: default;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
         }
         .keyword:hover {
             background-color: var(--accent);
@@ -504,6 +536,7 @@
             transition: all 0.3s var(--ease-elastic);
             position: relative;
             overflow: hidden;
+            min-height: 44px; /* Touch target */
         }
         .linkedin-share-btn:hover {
             background-color: #005e90;
@@ -518,6 +551,7 @@
             padding: 0;
             margin-right: 1rem;
             z-index: 560;
+            min-width: 44px; min-height: 44px; /* Touch target */
         }
         #back-to-home:hover {
             background: rgba(255,255,255,0.2);
@@ -547,6 +581,7 @@
             max-width: 600px;
             border-radius: 12px;
             color: var(--text-primary);
+            will-change: transform, opacity;
         }
 
         .modal-header {
@@ -567,6 +602,7 @@
             font-size: 1.8rem;
             font-weight: bold;
             cursor: pointer;
+            padding: 0.5rem; /* Increase touch area */
         }
 
         .close-btn:hover, .close-btn:focus {
@@ -593,6 +629,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            min-height: 44px;
         }
 
         .btn-group .btn:first-child { border-radius: 6px 0 0 6px; }
@@ -640,6 +677,7 @@
             font-weight: 500;
             font-family: inherit;
             border: none;
+            min-height: 44px;
         }
 
         .btn-secondary {
@@ -661,6 +699,7 @@
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             border-radius: 6px;
+            min-height: 44px;
         }
 
         /* --- Animations --- */
@@ -694,6 +733,7 @@
             transform: scale(0);
             animation: rippleAnim 0.6s linear;
             pointer-events: none;
+            z-index: 10;
         }
         @keyframes rippleAnim {
             to { transform: scale(4); opacity: 0; }
@@ -711,11 +751,16 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Reduce Motion */
+        /* Accessibility: Reduce Motion */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+            .mesh-gradient, .floating-shape, .noise-overlay {
+                animation: none !important;
+                display: none;
             }
         }
 
@@ -725,6 +770,7 @@
                 grid-template-columns: 1fr;
                 grid-template-rows: auto; /* Let rows size automatically */
                 gap: 1rem;
+                padding: 0 1rem;
             }
 
             .domain-card.horizontal {
@@ -733,7 +779,7 @@
             }
 
             #app-title {
-                font-size: 2rem;
+                font-size: 2.2rem;
                 margin-bottom: 1.5rem;
             }
 
@@ -744,15 +790,57 @@
             .domain-card h2 {
                 font-size: 1.3rem;
             }
+
+            /* Mobile Optimizations */
+            .cursor-spotlight {
+                display: none; /* Disable on mobile */
+            }
+
+            .noise-overlay {
+                animation: none; /* Static grain */
+            }
+
+            .floating-shape {
+                display: none; /* Reduce complexity */
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .btn-group {
+                display: flex;
+                flex-direction: column;
+            }
+            .btn-group .btn {
+                width: 100%;
+                border-radius: 6px !important;
+                margin-bottom: 0.5rem;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+            .modal-footer .btn {
+                width: 100%;
+            }
         }
 
         @media (max-width: 480px) {
             #app {
                 padding: 1rem 0.5rem;
             }
-
             #typing-text {
                 font-size: 2.5rem;
+            }
+            .story-content h3 {
+                font-size: 1.2rem;
+            }
+            .story-content p {
+                font-size: 0.95rem;
             }
         }
 
@@ -769,6 +857,7 @@
         <div class="floating-shape shape-circle" style="width: 150px; height: 150px; top: 40%; left: 50%; animation-duration: 35s; animation-delay: -10s; opacity: 0.05;"></div>
         <div class="floating-shape shape-triangle" style="width: 60px; height: 60px; top: 80%; left: 20%; animation-duration: 28s;"></div>
     </div>
+    <div id="particle-container"></div>
 
     <!-- Splash screen -->
     <div id="splash-screen">
@@ -909,7 +998,7 @@
                 document.head.appendChild(style);
 
                 // Particle burst
-                createParticles(window.innerWidth / 2, window.innerHeight / 2, 20);
+                createParticles(window.innerWidth / 2, window.innerHeight / 2, isMobile ? 10 : 30);
 
             }, 2500);
 
@@ -931,29 +1020,31 @@
             }, 3000);
 
             // 3D Tilt Effect for Domain Cards
-            domainCards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    
-                    // Calculate rotation (max 10 degrees)
-                    const rotateX = ((y - centerY) / centerY) * -10;
-                    const rotateY = ((x - centerX) / centerX) * 10;
+            if (!isMobile) {
+                domainCards.forEach(card => {
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        
+                        // Calculate rotation (max 10 degrees)
+                        const rotateX = ((y - centerY) / centerY) * -10;
+                        const rotateY = ((x - centerX) / centerX) * 10;
 
-                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-                    card.classList.remove('floating'); // Pause floating on hover
-                });
+                        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                        card.classList.remove('floating'); // Pause floating on hover
+                    });
 
-                card.addEventListener('mouseleave', () => {
-                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-                    setTimeout(() => {
-                        card.classList.add('floating'); // Resume floating
-                    }, 300);
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+                        setTimeout(() => {
+                            card.classList.add('floating'); // Resume floating
+                        }, 300);
+                    });
                 });
-            });
+            }
 
             domainCards.forEach(card => {
                 card.addEventListener('click', () => {
@@ -964,8 +1055,13 @@
 
             backToHomeBtn.addEventListener('click', () => {
                 feedPage.classList.remove('visible');
-                feedPage.classList.remove('blur-in');
-                app.style.display = 'flex';
+                
+                // FLIP-like transition back
+                setTimeout(() => {
+                    app.style.display = 'flex';
+                    app.style.opacity = '1';
+                }, 300);
+
                 if (subdomainSwiper) {
                     subdomainSwiper.destroy(true, true);
                     subdomainSwiper = null;
@@ -978,9 +1074,7 @@
                 const domainData = storyData[domain];
 
                 if (!domainData || Object.keys(domainData).length === 0) {
-                    if (confirm(`No stories found for ${domain}. The scraper might need to run. Run it now?`)) {
-                        triggerScraper();
-                    }
+                    subdomainWrapper.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No stories available for this section yet. Please check back later.</div>';
                     return;
                 }
                 
@@ -1013,7 +1107,7 @@
                             <div class="swiper-slide story-card" 
                                 data-full-content="${encodeURIComponent(story.fullContent)}"
                                 data-headline="${story.headline}">
-                                <img class="story-image" src="${story.image}" alt="${story.headline}" data-swiper-parallax="20%" onerror="this.src='https://placehold.co/600x400/21262d/8b949e?text=Image+Not+Found'">
+                                <img class="story-image" src="${story.image}" alt="${story.headline}" data-swiper-parallax="${isMobile ? '10%' : '20%'}" onerror="this.src='https://placehold.co/600x400/21262d/8b949e?text=Image+Not+Found'">
                                 <div class="story-content">
                                     <h3 style="animation: slideUpFade 0.5s ease-out ${delay}s forwards; opacity: 0; transform: translateY(20px);">${story.headline}</h3>
                                     <p style="animation: slideUpFade 0.5s ease-out ${delay + 0.1}s forwards; opacity: 0; transform: translateY(20px);">${story.summary}</p>
@@ -1042,12 +1136,17 @@
                 });
 
                 app.style.display = 'none';
+                app.style.opacity = '0';
                 feedPage.classList.add('visible');
+                feedPage.classList.remove('blur-in');
+                void feedPage.offsetWidth; // Trigger reflow
                 feedPage.classList.add('blur-in');
                 
                 subdomainSwiper = new Swiper('#subdomain-swiper', {
                     direction: 'horizontal',
                     loop: false,
+                    resistance: true,
+                    resistanceRatio: 0.85,
                     on: {
                         slideChange: function () {
                             const activeIndex = this.activeIndex;
@@ -1063,6 +1162,8 @@
                         direction: 'vertical',
                         loop: false,
                         parallax: true, // Enable parallax
+                        resistance: true,
+                        resistanceRatio: 0.85,
                         nested: true,
                     });
                 });
@@ -1271,13 +1372,15 @@
             // --- Helper Functions for Effects ---
 
             // Cursor Spotlight
-            const spotlight = document.createElement('div');
-            spotlight.classList.add('cursor-spotlight');
-            document.body.appendChild(spotlight);
-            document.addEventListener('mousemove', (e) => {
-                spotlight.style.left = e.clientX + 'px';
-                spotlight.style.top = e.clientY + 'px';
-            });
+            if (!isMobile) {
+                const spotlight = document.createElement('div');
+                spotlight.classList.add('cursor-spotlight');
+                document.body.appendChild(spotlight);
+                document.addEventListener('mousemove', (e) => {
+                    spotlight.style.left = e.clientX + 'px';
+                    spotlight.style.top = e.clientY + 'px';
+                });
+            }
 
             // Ripple Effect
             function createRipple(event) {
@@ -1302,10 +1405,389 @@
 
             // Particle Burst
             function createParticles(x, y, count) {
-                // Simple implementation placeholder - for production, use a library or canvas
-                // This is just a visual cue that the function exists as requested
-                // In a real scenario, this would spawn divs that animate outwards
-                console.log(`Bursting ${count} particles at ${x}, ${y}`);
+                const container = document.getElementById('particle-container');
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 100 + 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    particle.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 500 + 500,
+                        easing: 'cubic-bezier(0, .9, .57, 1)',
+                    }).onfinish = () => particle.remove();
+                    
+                    container.appendChild(particle);
+                }
+            }
+
+            // Keyword Magnetic Effect (Simple version)
+            // Handled via CSS hover transform for performance
+        });
+    </script>
+</body>
+</html>
+            }
+
+            recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
+            confirmShareBtn.addEventListener('click', (e) => { createRipple(e); confirmAndPost(); });
+
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    createRipple(event);
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    openModal();
+                    const isAuthenticated = await generatePreview(); 
+                    if (isAuthenticated) {
+                        await fetchAndPopulateLinkedinPages();
+                    }
+                }
+            });
+
+            // --- Helper Functions for Effects ---
+
+            // Cursor Spotlight
+            if (!isMobile) {
+                const spotlight = document.createElement('div');
+                spotlight.classList.add('cursor-spotlight');
+                document.body.appendChild(spotlight);
+                document.addEventListener('mousemove', (e) => {
+                    spotlight.style.left = e.clientX + 'px';
+                    spotlight.style.top = e.clientY + 'px';
+                });
+            }
+
+            // Ripple Effect
+            function createRipple(event) {
+                const button = event.currentTarget || event.target;
+                const circle = document.createElement("span");
+                const diameter = Math.max(button.clientWidth, button.clientHeight);
+                const radius = diameter / 2;
+                const rect = button.getBoundingClientRect();
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${event.clientX - rect.left - radius}px`;
+                circle.style.top = `${event.clientY - rect.top - radius}px`;
+                circle.classList.add("ripple");
+
+                const rippleContainer = button.querySelector('.ripple-container') || button;
+                // Ensure button has relative positioning or overflow hidden if needed
+                // For simplicity, appending directly if overflow hidden is set in CSS
+                button.appendChild(circle);
+
+                setTimeout(() => circle.remove(), 600);
+            }
+
+            // Particle Burst
+            function createParticles(x, y, count) {
+                const container = document.getElementById('particle-container');
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 100 + 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    particle.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 500 + 500,
+                        easing: 'cubic-bezier(0, .9, .57, 1)',
+                    }).onfinish = () => particle.remove();
+                    
+                    container.appendChild(particle);
+                }
+            }
+
+            // Keyword Magnetic Effect (Simple version)
+            // Handled via CSS hover transform for performance
+        });
+    </script>
+</body>
+</html>
+            }
+
+            recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
+            confirmShareBtn.addEventListener('click', (e) => { createRipple(e); confirmAndPost(); });
+
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    createRipple(event);
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    openModal();
+                    const isAuthenticated = await generatePreview(); 
+                    if (isAuthenticated) {
+                        await fetchAndPopulateLinkedinPages();
+                    }
+                }
+            });
+
+            // --- Helper Functions for Effects ---
+
+            // Cursor Spotlight
+            if (!isMobile) {
+                const spotlight = document.createElement('div');
+                spotlight.classList.add('cursor-spotlight');
+                document.body.appendChild(spotlight);
+                document.addEventListener('mousemove', (e) => {
+                    spotlight.style.left = e.clientX + 'px';
+                    spotlight.style.top = e.clientY + 'px';
+                });
+            }
+
+            // Ripple Effect
+            function createRipple(event) {
+                const button = event.currentTarget || event.target;
+                const circle = document.createElement("span");
+                const diameter = Math.max(button.clientWidth, button.clientHeight);
+                const radius = diameter / 2;
+                const rect = button.getBoundingClientRect();
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${event.clientX - rect.left - radius}px`;
+                circle.style.top = `${event.clientY - rect.top - radius}px`;
+                circle.classList.add("ripple");
+
+                const rippleContainer = button.querySelector('.ripple-container') || button;
+                // Ensure button has relative positioning or overflow hidden if needed
+                // For simplicity, appending directly if overflow hidden is set in CSS
+                button.appendChild(circle);
+
+                setTimeout(() => circle.remove(), 600);
+            }
+
+            // Particle Burst
+            function createParticles(x, y, count) {
+                const container = document.getElementById('particle-container');
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 100 + 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    particle.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 500 + 500,
+                        easing: 'cubic-bezier(0, .9, .57, 1)',
+                    }).onfinish = () => particle.remove();
+                    
+                    container.appendChild(particle);
+                }
+            }
+
+            // Keyword Magnetic Effect (Simple version)
+            // Handled via CSS hover transform for performance
+        });
+    </script>
+</body>
+</html>
+            }
+
+            recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
+            confirmShareBtn.addEventListener('click', (e) => { createRipple(e); confirmAndPost(); });
+
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    createRipple(event);
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    openModal();
+                    const isAuthenticated = await generatePreview(); 
+                    if (isAuthenticated) {
+                        await fetchAndPopulateLinkedinPages();
+                    }
+                }
+            });
+
+            // --- Helper Functions for Effects ---
+
+            // Cursor Spotlight
+            if (!isMobile) {
+                const spotlight = document.createElement('div');
+                spotlight.classList.add('cursor-spotlight');
+                document.body.appendChild(spotlight);
+                document.addEventListener('mousemove', (e) => {
+                    spotlight.style.left = e.clientX + 'px';
+                    spotlight.style.top = e.clientY + 'px';
+                });
+            }
+
+            // Ripple Effect
+            function createRipple(event) {
+                const button = event.currentTarget || event.target;
+                const circle = document.createElement("span");
+                const diameter = Math.max(button.clientWidth, button.clientHeight);
+                const radius = diameter / 2;
+                const rect = button.getBoundingClientRect();
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${event.clientX - rect.left - radius}px`;
+                circle.style.top = `${event.clientY - rect.top - radius}px`;
+                circle.classList.add("ripple");
+
+                const rippleContainer = button.querySelector('.ripple-container') || button;
+                // Ensure button has relative positioning or overflow hidden if needed
+                // For simplicity, appending directly if overflow hidden is set in CSS
+                button.appendChild(circle);
+
+                setTimeout(() => circle.remove(), 600);
+            }
+
+            // Particle Burst
+            function createParticles(x, y, count) {
+                const container = document.getElementById('particle-container');
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 100 + 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    particle.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 500 + 500,
+                        easing: 'cubic-bezier(0, .9, .57, 1)',
+                    }).onfinish = () => particle.remove();
+                    
+                    container.appendChild(particle);
+                }
+            }
+
+            // Keyword Magnetic Effect (Simple version)
+            // Handled via CSS hover transform for performance
+        });
+    </script>
+</body>
+</html>
+            }
+
+            recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
+            confirmShareBtn.addEventListener('click', (e) => { createRipple(e); confirmAndPost(); });
+
+            document.body.addEventListener('click', async function(event) {
+                const shareBtn = event.target.closest('.linkedin-share-btn');
+                if (shareBtn) {
+                    createRipple(event);
+                    activeStoryCard = shareBtn.closest('.story-card');
+                    openModal();
+                    const isAuthenticated = await generatePreview(); 
+                    if (isAuthenticated) {
+                        await fetchAndPopulateLinkedinPages();
+                    }
+                }
+            });
+
+            // --- Helper Functions for Effects ---
+
+            // Cursor Spotlight
+            if (!isMobile) {
+                const spotlight = document.createElement('div');
+                spotlight.classList.add('cursor-spotlight');
+                document.body.appendChild(spotlight);
+                document.addEventListener('mousemove', (e) => {
+                    spotlight.style.left = e.clientX + 'px';
+                    spotlight.style.top = e.clientY + 'px';
+                });
+            }
+
+            // Ripple Effect
+            function createRipple(event) {
+                const button = event.currentTarget || event.target;
+                const circle = document.createElement("span");
+                const diameter = Math.max(button.clientWidth, button.clientHeight);
+                const radius = diameter / 2;
+                const rect = button.getBoundingClientRect();
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${event.clientX - rect.left - radius}px`;
+                circle.style.top = `${event.clientY - rect.top - radius}px`;
+                circle.classList.add("ripple");
+
+                const rippleContainer = button.querySelector('.ripple-container') || button;
+                // Ensure button has relative positioning or overflow hidden if needed
+                // For simplicity, appending directly if overflow hidden is set in CSS
+                button.appendChild(circle);
+
+                setTimeout(() => circle.remove(), 600);
+            }
+
+            // Particle Burst
+            function createParticles(x, y, count) {
+                const container = document.getElementById('particle-container');
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
+                    particle.style.borderRadius = '50%';
+                    particle.style.pointerEvents = 'none';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 100 + 50;
+                    const tx = Math.cos(angle) * velocity;
+                    const ty = Math.sin(angle) * velocity;
+
+                    particle.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 500 + 500,
+                        easing: 'cubic-bezier(0, .9, .57, 1)',
+                    }).onfinish = () => particle.remove();
+                    
+                    container.appendChild(particle);
+                }
             }
 
             // Keyword Magnetic Effect (Simple version)
