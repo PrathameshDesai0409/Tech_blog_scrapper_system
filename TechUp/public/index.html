@@ -1072,9 +1072,18 @@
                 const subdomainWrapper = document.getElementById('subdomain-wrapper');
                 const subdomainNav = document.getElementById('subdomain-nav');
                 const domainData = storyData[domain];
+                
+                // Show feed page immediately so user sees feedback/loading
+                app.style.display = 'none';
+                app.style.opacity = '0';
+                feedPage.classList.add('visible');
+                feedPage.classList.remove('blur-in');
+                void feedPage.offsetWidth; // Trigger reflow
+                feedPage.classList.add('blur-in');
 
                 if (!domainData || Object.keys(domainData).length === 0) {
-                    subdomainWrapper.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No stories available for this section yet. Please check back later.</div>';
+                    subdomainWrapper.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem; width: 100%;">No stories available for this section yet. Please check back later.</div>';
+                    subdomainNav.innerHTML = '';
                     return;
                 }
                 
@@ -1134,13 +1143,6 @@
                             </div>`;
                     }
                 });
-
-                app.style.display = 'none';
-                app.style.opacity = '0';
-                feedPage.classList.add('visible');
-                feedPage.classList.remove('blur-in');
-                void feedPage.offsetWidth; // Trigger reflow
-                feedPage.classList.add('blur-in');
                 
                 subdomainSwiper = new Swiper('#subdomain-swiper', {
                     direction: 'horizontal',
