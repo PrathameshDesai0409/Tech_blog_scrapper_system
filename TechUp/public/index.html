@@ -606,9 +606,13 @@
             const backToHomeBtn = document.getElementById('back-to-home');
             let subdomainSwiper = null;
             let storyData = {};
+            
+            // UPDATE THIS: The URL of your deployed backend (e.g., https://your-app.onrender.com)
+            // Leave empty ('') if running locally where frontend/backend are on the same port
+            const API_BASE_URL = ''; 
 
             try {
-                const response = await fetch('/api/stories');
+                const response = await fetch(`${API_BASE_URL}/api/stories`);
                 storyData = await response.json();
             } catch (error) {
                 console.error("Failed to fetch stories:", error);
@@ -779,7 +783,7 @@
                     ...getShareOptions()
                 };
                 try {
-                    const response = await fetch('/api/share/preview', {
+                    const response = await fetch(`${API_BASE_URL}/api/share/preview`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(storyData)
@@ -788,14 +792,14 @@
                         handleAuthRedirect();
                         return false;
                     }
-                    if (!response.ok) throw new Error('Failed to generate preview.');
+                    if (!response.ok) throw new Error(`Server error: ${response.status} ${response.statusText}`);
                     const data = await response.json();
                     previewContent.textContent = data.previewText;
                     previewImage.src = data.previewImageUrl;
                     previewImage.style.display = 'block';
                     return true;
                 } catch (error) {
-                    previewContent.textContent = 'Error generating preview. Please try again.';
+                    previewContent.textContent = `Error generating preview: ${error.message}`;
                     console.error('Preview error:', error);
                     return false;
                 } finally {
@@ -805,7 +809,7 @@
 
             async function fetchAndPopulateLinkedinPages() {
                 try {
-                    const response = await fetch('/api/linkedin/organizations');
+                    const response = await fetch(`${API_BASE_URL}/api/linkedin/organizations`);
                     if (!response.ok) {
                         if (response.status === 401) handleAuthRedirect();
                         throw new Error('Could not fetch LinkedIn pages.');
@@ -837,7 +841,7 @@
                 confirmShareBtn.disabled = true;
                 confirmShareBtn.textContent = 'Posting...';
                 try {
-                    const response = await fetch('/api/share/post', {
+                    const response = await fetch(`${API_BASE_URL}/api/share/post`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(postData)
@@ -866,7 +870,7 @@
                 const width = 600, height = 700;
                 const left = (window.innerWidth / 2) - (width / 2);
                 const top = (window.innerHeight / 2) - (height / 2);
-                const authWindow = window.open('/auth/linkedin', 'linkedinAuth', `width=${width},height=${height},top=${top},left=${left}`);
+                const authWindow = window.open(`${API_BASE_URL}/auth/linkedin`, 'linkedinAuth', `width=${width},height=${height},top=${top},left=${left}`);
                 const checkWindow = setInterval(() => {
                     if (authWindow.closed) {
                         clearInterval(checkWindow);
