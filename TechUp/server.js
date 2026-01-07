@@ -8,11 +8,18 @@ const session = require('express-session');
 const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2').Strategy;
 const sharp = require('sharp');
+const cors = require('cors');
 
 const runScraper = require('./scripts/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Allow requests from your Netlify frontend
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://techup-flairloop.netlify.app/'],
+    credentials: true
+}));
 
 // --- OpenAI Configuration ---
 const openai = new OpenAI({
@@ -344,4 +351,6 @@ async function createLinkedInPost(accessToken, personUrn, text, imageUrn, origin
     });
 }
 
-module.exports = app;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
