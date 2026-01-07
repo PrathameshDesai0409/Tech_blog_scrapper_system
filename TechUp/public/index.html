@@ -647,7 +647,9 @@
                 const domainData = storyData[domain];
 
                 if (!domainData || Object.keys(domainData).length === 0) {
-                    alert(`No stories found for ${domain}. The scraper might need to run.`);
+                    if (confirm(`No stories found for ${domain}. The scraper might need to run. Run it now?`)) {
+                        triggerScraper();
+                    }
                     return;
                 }
                 
@@ -728,6 +730,26 @@
                         nested: true,
                     });
                 });
+            }
+
+            async function triggerScraper() {
+                try {
+                    document.body.style.cursor = 'wait';
+                    const response = await fetch(`${API_BASE_URL}/api/scrape`, { method: 'POST' });
+                    if (response.ok) {
+                        alert('Scraper finished! Reloading stories...');
+                        const storiesResponse = await fetch(`${API_BASE_URL}/api/stories`);
+                        storyData = await storiesResponse.json();
+                        alert('Stories reloaded. Please tap the category again.');
+                    } else {
+                        alert('Failed to run scraper. Please check server logs.');
+                    }
+                } catch (error) {
+                    console.error('Error triggering scraper:', error);
+                    alert('Error triggering scraper: ' + error.message);
+                } finally {
+                    document.body.style.cursor = 'default';
+                }
             }
             
             const shareModal = document.getElementById('share-modal');

@@ -170,6 +170,18 @@ app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
     }
 });
 
+app.post('/api/scrape', async (req, res) => {
+    try {
+        console.log('--- Manual scraper trigger received ---');
+        await runScraper();
+        console.log('--- Scraper finished successfully ---');
+        res.status(200).json({ message: 'Scraping completed successfully.' });
+    } catch (error) {
+        console.error('Error running scraper:', error);
+        res.status(500).json({ message: 'Failed to run scraper.', error: error.message });
+    }
+});
+
 app.post('/api/share/post', ensureAuthenticated, async (req, res) => {
     const { content, imageUrl, originalUrl, headline, authorUrn } = req.body;
     const accessToken = req.user.accessToken;
