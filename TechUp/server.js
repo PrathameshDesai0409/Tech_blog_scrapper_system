@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 // Allow requests from your Netlify frontend
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://techup-flairloop.netlify.app/'],
+    origin: ['http://localhost:3000', 'https://techup-flairloop.netlify.app'],
     credentials: true
 }));
 
