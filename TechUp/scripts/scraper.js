@@ -61,6 +61,11 @@ async function runScraper() {
                         if (!article) continue;
                         
                         const summary = await summarizeContent(article.content);
+                        
+                        if (summary && summary.error === 'AUTH_ERROR') {
+                            console.error("CRITICAL: Stopping scraper due to invalid API Key.");
+                            return;
+                        }
                         if (!summary) continue;
 
                         const newStory = {
@@ -184,6 +189,9 @@ async function summarizeContent(content) {
         return result;
     } catch (error) {
         console.error('OpenAI API Error:', error.message);
+        if (error.status === 401) {
+            return { error: 'AUTH_ERROR' };
+        }
         return null;
     }
 }
@@ -194,4 +202,3 @@ module.exports = runScraper;
 if (require.main === module) {
     runScraper();
 }
-
