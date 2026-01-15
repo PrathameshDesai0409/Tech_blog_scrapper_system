@@ -983,8 +983,23 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/api/stories`);
                 storyData = await response.json();
+                
+                // Check if data is empty (all keys empty)
+                const isEmpty = Object.values(storyData).every(cat => !cat || Object.keys(cat).length === 0);
+                
+                if (isEmpty) {
+                    throw new Error("API returned empty data");
+                }
             } catch (error) {
-                console.error("Failed to fetch stories:", error);
+                console.warn("Failed to fetch stories from API, trying static fallback...", error);
+                try {
+                    const staticResponse = await fetch('data/summary.json');
+                    if (staticResponse.ok) {
+                        storyData = await staticResponse.json();
+                    }
+                } catch (e) {
+                    console.error("Static fallback failed:", e);
+                }
             }
 
             // Splash Screen Logic

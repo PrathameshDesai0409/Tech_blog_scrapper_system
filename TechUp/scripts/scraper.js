@@ -12,7 +12,7 @@ const openai = new OpenAI({
 
 // --- CONFIGURATION ---
 const BLOGS_PATH = path.join(__dirname, '..', 'data', 'blogs.json');
-const SUMMARY_PATH = path.join(__dirname, '..', 'data', 'summary.json');
+const SUMMARY_PATH = path.join(__dirname, '..', 'public', 'data', 'summary.json');
 const HISTORY_PATH = path.join(__dirname, '..', 'data', 'scraped_history.json');
 
 async function runScraper() {
@@ -90,6 +90,12 @@ async function runScraper() {
         }
     }
 
+    // Ensure the directory exists before writing
+    const summaryDir = path.dirname(SUMMARY_PATH);
+    try {
+        await fs.mkdir(summaryDir, { recursive: true });
+    } catch (err) { /* ignore if exists */ }
+
     await fs.writeFile(SUMMARY_PATH, JSON.stringify(newSummaryData, null, 2));
     await fs.writeFile(HISTORY_PATH, JSON.stringify(Array.from(scrapedHistory), null, 2));
     console.log('\nScraper process finished. summary.json has been rebuilt with live articles.');
@@ -123,6 +129,10 @@ async function findArticleLinks(blogUrl) {
             const href = $(el).attr('href');
             if (href) {
                 try {
+                    // Filter out non-article pages (categories, tags, pagination, authors)
+                    if (href.includes('/category/') || href.includes('/tag/') || href.includes('/page/') || href.includes('/author/')) {
+                        return;
+                    }
                     const absoluteUrl = new URL(href, blogUrl).href;
                     links.add(absoluteUrl);
                 } catch (e) { /* Ignore invalid URLs */ }

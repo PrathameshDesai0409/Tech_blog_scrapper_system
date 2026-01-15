@@ -93,6 +93,7 @@ function ensureAuthenticated(req, res, next) {
 app.get('/api/stories', (req, res) => {
     // Define possible paths where the file might be located in the serverless environment
     const possiblePaths = [
+        path.join(__dirname, 'public', 'data', 'summary.json'), // Check public/data first
         path.resolve('data', 'summary.json'),
         path.join(process.cwd(), 'data', 'summary.json'),
         path.join(__dirname, 'data', 'summary.json'),
