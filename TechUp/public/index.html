@@ -1258,7 +1258,8 @@
                     const response = await fetch(`${API_BASE_URL}/api/share/preview`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(storyData)
+                        body: JSON.stringify(storyData),
+                        credentials: 'include'
                     });
                     if (response.status === 401) {
                         handleAuthRedirect();
@@ -1281,7 +1282,9 @@
 
             async function fetchAndPopulateLinkedinPages() {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/linkedin/organizations`);
+                    const response = await fetch(`${API_BASE_URL}/api/linkedin/organizations`, {
+                        credentials: 'include'
+                    });
                     if (!response.ok) {
                         if (response.status === 401) handleAuthRedirect();
                         throw new Error('Could not fetch LinkedIn pages.');
@@ -1316,7 +1319,8 @@
                     const response = await fetch(`${API_BASE_URL}/api/share/post`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(postData)
+                        body: JSON.stringify(postData),
+                        credentials: 'include'
                     });
                     if (response.status === 401) {
                         handleAuthRedirect();

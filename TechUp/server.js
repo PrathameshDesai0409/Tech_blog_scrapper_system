@@ -16,9 +16,12 @@ const runScraper = require('./scripts/scraper');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy is required for secure cookies behind Render's load balancer
+app.set('trust proxy', 1);
+
 // Allow requests from your Netlify frontend
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://techup-flairloop.netlify.app'],
+    origin: ['http://localhost:3000', 'http://localhost:5500', 'http://127.0.0.1:5500', 'https://techup-flairloop.netlify.app'],
     credentials: true
 }));
 
@@ -32,7 +35,10 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // For development. Use true in production with HTTPS.
+    cookie: { 
+        secure: true, // Required for SameSite: 'none' on HTTPS (Render)
+        sameSite: 'none' // Required for cross-origin cookies
+    }
 }));
 
 app.use(passport.initialize());
