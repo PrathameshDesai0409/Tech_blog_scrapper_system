@@ -976,6 +976,7 @@
             const typingText = document.getElementById('typing-text');
             let subdomainSwiper = null;
             let storyData = {};
+            const isMobile = window.matchMedia("(max-width: 768px)").matches;
             
             const API_BASE_URL = 'https://tech-blog-scrapper-system.onrender.com'; 
 
@@ -1334,95 +1335,6 @@
                         fetchAndPopulateLinkedinPages();
                     }
                 }, 500);
-            }
-
-            recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
-            confirmShareBtn.addEventListener('click', (e) => { createRipple(e); confirmAndPost(); });
-
-            document.body.addEventListener('click', async function(event) {
-                const shareBtn = event.target.closest('.linkedin-share-btn');
-                if (shareBtn) {
-                    createRipple(event);
-                    activeStoryCard = shareBtn.closest('.story-card');
-                    openModal();
-                    const isAuthenticated = await generatePreview(); 
-                    if (isAuthenticated) {
-                        await fetchAndPopulateLinkedinPages();
-                    }
-                }
-            });
-
-            // --- Helper Functions for Effects ---
-
-            // Cursor Spotlight
-            if (!isMobile) {
-                const spotlight = document.createElement('div');
-                spotlight.classList.add('cursor-spotlight');
-                document.body.appendChild(spotlight);
-                document.addEventListener('mousemove', (e) => {
-                    spotlight.style.left = e.clientX + 'px';
-                    spotlight.style.top = e.clientY + 'px';
-                });
-            }
-
-            // Ripple Effect
-            function createRipple(event) {
-                const button = event.currentTarget || event.target;
-                const circle = document.createElement("span");
-                const diameter = Math.max(button.clientWidth, button.clientHeight);
-                const radius = diameter / 2;
-                const rect = button.getBoundingClientRect();
-
-                circle.style.width = circle.style.height = `${diameter}px`;
-                circle.style.left = `${event.clientX - rect.left - radius}px`;
-                circle.style.top = `${event.clientY - rect.top - radius}px`;
-                circle.classList.add("ripple");
-
-                const rippleContainer = button.querySelector('.ripple-container') || button;
-                // Ensure button has relative positioning or overflow hidden if needed
-                // For simplicity, appending directly if overflow hidden is set in CSS
-                button.appendChild(circle);
-
-                setTimeout(() => circle.remove(), 600);
-            }
-
-            // Particle Burst
-            function createParticles(x, y, count) {
-                const container = document.getElementById('particle-container');
-                for (let i = 0; i < count; i++) {
-                    const particle = document.createElement('div');
-                    particle.style.position = 'absolute';
-                    particle.style.left = x + 'px';
-                    particle.style.top = y + 'px';
-                    particle.style.width = Math.random() * 4 + 2 + 'px';
-                    particle.style.height = particle.style.width;
-                    particle.style.background = `hsl(${Math.random() * 60 + 200}, 100%, 70%)`;
-                    particle.style.borderRadius = '50%';
-                    particle.style.pointerEvents = 'none';
-                    
-                    const angle = Math.random() * Math.PI * 2;
-                    const velocity = Math.random() * 100 + 50;
-                    const tx = Math.cos(angle) * velocity;
-                    const ty = Math.sin(angle) * velocity;
-
-                    particle.animate([
-                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-                        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
-                    ], {
-                        duration: Math.random() * 500 + 500,
-                        easing: 'cubic-bezier(0, .9, .57, 1)',
-                    }).onfinish = () => particle.remove();
-                    
-                    container.appendChild(particle);
-                }
-            }
-
-            // Keyword Magnetic Effect (Simple version)
-            // Handled via CSS hover transform for performance
-        });
-    </script>
-</body>
-</html>
             }
 
             recreateBtn.addEventListener('click', (e) => { createRipple(e); generatePreview(); });
