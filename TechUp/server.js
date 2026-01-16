@@ -45,7 +45,8 @@ app.use(session({
     saveUninitialized: true,
     cookie: { 
         secure: true, // Required for SameSite: 'none' on HTTPS (Render)
-        sameSite: 'none' // Required for cross-origin cookies
+        sameSite: 'none', // Required for cross-origin cookies
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
 }));
 
@@ -67,7 +68,13 @@ async function(accessToken, refreshToken, params, profile, done) {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const userProfile = userinfoResponse.data;
-        const user = { id: userProfile.sub, personUrn: `urn:li:person:${userProfile.sub}`, accessToken: accessToken };
+        const user = { 
+            id: userProfile.sub, 
+            personUrn: `urn:li:person:${userProfile.sub}`, 
+            accessToken: accessToken,
+            name: userProfile.name,
+            picture: userProfile.picture
+        };
         return done(null, user);
     } catch (error) {
         return done(error);
@@ -96,6 +103,21 @@ app.get('/auth/linkedin/callback',
     res.send('<script>window.opener.location.reload(); window.close();</script>');
   }
 );
+
+app.post('/auth/logout', (req, res, next) => {
+    req.logout(function(err) {
+        if (err) { return next(err); }
+        res.status(200).json({ message: 'Logged out' });
+    });
+});
+
+app.get('/api/user', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.json({ authenticated: true, user: req.user });
+    } else {
+        res.json({ authenticated: false });
+    }
+});
 
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next(); }
