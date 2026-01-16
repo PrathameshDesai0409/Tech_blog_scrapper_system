@@ -13,6 +13,14 @@ const cron = require('node-cron');
 
 const runScraper = require('./scripts/scraper');
 
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -132,15 +140,25 @@ app.post('/api/share/preview', ensureAuthenticated, async (req, res) => {
     const { headline, fullContent, originalUrl, includeBlogName, includeBlogLink, imageSource, imageSize, originalImage, includeLogo } = req.body;
 
     try {
-        const humanizedText = await humanizeForLinkedIn(headline, fullContent, originalUrl, includeBlogName, includeBlogLink);
+        // Optimization: Run text generation and image generation in parallel
+        const humanizedTextPromise = humanizeForLinkedIn(headline, fullContent, originalUrl, includeBlogName, includeBlogLink);
         
-        let imageUrlToPreview = originalImage;
-        console.log(`Initial imageUrlToPreview: ${imageUrlToPreview}`);
-
+        let aiImagePromise = Promise.resolve(null);
         if (imageSource === 'ai') {
             console.log('Image source is AI. Generating AI image...');
-            imageUrlToPreview = await generateAiImage(humanizedText, imageSize);
+            // Use fullContent for context to allow parallel execution
+            aiImagePromise = generateAiImage(fullContent, imageSize);
+        }
+
+        const [humanizedText, aiImageUrl] = await Promise.all([humanizedTextPromise, aiImagePromise]);
+
+        let imageUrlToPreview = originalImage;
+        
+        if (imageSource === 'ai' && aiImageUrl) {
+            imageUrlToPreview = aiImageUrl;
             console.log(`AI-generated image URL: ${imageUrlToPreview}`);
+        } else {
+            console.log(`Initial imageUrlToPreview: ${imageUrlToPreview}`);
         }
 
         if (includeLogo) {
@@ -267,7 +285,7 @@ async function generateAiImage(content, size) {
             model: "dall-e-3",
             prompt: `Create a visually appealing, professional, and abstract image suitable for a LinkedIn post. The image should be thematically related to the following content, but it must not contain any text, words, or letters. Content: ${content.substring(0, 1000)}`,
             n: 1,
-            size: "1024x1024", // Hardcoded to a valid size
+            size: size || "1024x1024", 
         });
         return response.data[0].url;
     } catch (error) {
