@@ -234,6 +234,8 @@
             transition: opacity 0.5s var(--ease-smooth), transform 0.5s var(--ease-smooth);
             z-index: 10;
             position: relative;
+            overflow-y: auto; /* Allow scrolling on small screens */
+            -webkit-overflow-scrolling: touch;
         }
         
         #app.visible {
@@ -836,6 +838,14 @@
             .domain-card h2 {
                 font-size: 1.3rem;
             }
+            
+            .story-image {
+                height: 35%; /* Reduce image height on mobile */
+            }
+            
+            .story-content {
+                padding: 1rem;
+            }
 
             /* Mobile Optimizations */
             .cursor-spotlight {
@@ -875,6 +885,27 @@
             }
             #user-name {
                 display: none;
+            }
+        }
+
+        /* Landscape Mobile Optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .story-card {
+                flex-direction: row;
+            }
+            .story-image {
+                width: 40%;
+                height: 100%;
+            }
+            .story-content {
+                width: 60%;
+                overflow-y: auto;
+            }
+            #feed-header {
+                height: 45px;
+            }
+            .swiper-container {
+                padding-top: 45px;
             }
         }
 
