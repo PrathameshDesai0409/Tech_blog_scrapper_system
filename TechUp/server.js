@@ -44,8 +44,8 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: { 
-        secure: true, // Required for SameSite: 'none' on HTTPS (Render)
-        sameSite: 'none', // Required for cross-origin cookies
+        secure: process.env.NODE_ENV === 'production', // Required for SameSite: 'none' on HTTPS (Render)
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-origin cookies
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
 }));
@@ -58,7 +58,7 @@ passport.use('linkedin', new OAuth2Strategy({
     tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET, // Make sure you have a .env file with your actual callback URL
-    callbackURL: process.env.LINKEDIN_CALLBACK_URL || "http://localhost:3000/auth/linkedin/callback",
+    callbackURL: process.env.LINKEDIN_CALLBACK_URL || (process.env.NODE_ENV === 'production' ? "https://tech-blog-scrapper-system.onrender.com/auth/linkedin/callback" : "http://localhost:3000/auth/linkedin/callback"),
     scope: ['openid', 'profile', 'email', 'w_member_social'],
     state: true
 },
