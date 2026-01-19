@@ -53,12 +53,15 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+const linkedinCallbackURL = process.env.NODE_ENV === 'production' ? "https://tech-blog-scrapper-system.onrender.com/auth/linkedin/callback" : "http://localhost:3000/auth/linkedin/callback";
+console.log(`Using LinkedIn Callback URL: ${linkedinCallbackURL}`);
+
 passport.use('linkedin', new OAuth2Strategy({
     authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
     tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
     clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET, // Make sure you have a .env file with your actual callback URL
-    callbackURL: process.env.LINKEDIN_CALLBACK_URL || (process.env.NODE_ENV === 'production' ? "https://tech-blog-scrapper-system.onrender.com/auth/linkedin/callback" : "http://localhost:3000/auth/linkedin/callback"),
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    callbackURL: linkedinCallbackURL,
     scope: ['openid', 'profile', 'email', 'w_member_social'],
     state: true
 },

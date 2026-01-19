@@ -1072,7 +1072,9 @@
             let storyData = {};
             const isMobile = window.matchMedia("(max-width: 768px)").matches;
             
-            const API_BASE_URL = 'https://tech-blog-scrapper-system.onrender.com'; 
+            const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                ? 'http://localhost:3000' 
+                : 'https://tech-blog-scrapper-system.onrender.com';
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/stories`);
