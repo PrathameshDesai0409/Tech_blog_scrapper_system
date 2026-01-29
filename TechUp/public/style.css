@@ -1,0 +1,45 @@
+/* Basic styles to reset browser defaults */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 2rem;
+    color: #1c1e21;
+}
+
+/* This is the main container for your news cards */
+#stories-container {
+    display: grid;
+    /* Creates a responsive grid that fits as many 320px cards as possible */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+
+    /* This constrains the grid and centers it on the page */
+    max-width: 1040px; /* As you requested */
+    margin: 0 auto; /* Centers the container */
+}
+
+/* Basic styling for a single news card */
+.story-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.story-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.story-card .content {
+    padding: 1.5rem;
+}
+
+.story-card h2 {
+    font-size: 1.2rem;
+    margin: 0 0 0.5rem 0;
+}
