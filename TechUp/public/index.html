@@ -924,6 +924,129 @@
             }
         }
 
+        /* --- Editorial Layout CSS --- */
+        .blog-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-top: 80px; /* Offset for fixed header */
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .section-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .featured-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .featured-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 10px 0;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        .featured-description {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .latest-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .news-card {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .news-card:hover {
+            transform: translateX(5px);
+        }
+
+        .news-card img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .news-card h4 {
+            font-size: 1rem;
+            margin: 5px 0;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .category {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .featured-card {
+            cursor: pointer;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .featured-image {
+                height: 250px;
+            }
+            
+            .featured-title {
+                font-size: 1.8rem;
+            }
+            
+            .blog-container {
+                padding-top: 70px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -982,11 +1105,9 @@
                 <!-- Nav items will be injected here -->
             </div>
         </div>
-        <!-- Horizontal Swiper for Subdomains -->
-        <div class="swiper-container" id="subdomain-swiper">
-            <div class="swiper-wrapper" id="subdomain-wrapper">
-                <!-- Subdomain slides will be injected here by JS -->
-            </div>
+        <!-- Editorial Feed Content -->
+        <div id="blog-feed-content">
+            <!-- Content injected by JS -->
         </div>
     </div>
 
@@ -1068,7 +1189,7 @@
             const userAvatar = document.getElementById('user-avatar');
             const userName = document.getElementById('user-name');
 
-            let subdomainSwiper = null;
+            let currentDomainData = null;
             let storyData = {};
             const isMobile = window.matchMedia("(max-width: 768px)").matches;
             
@@ -1184,6 +1305,8 @@
             });
 
             backToHomeBtn.addEventListener('click', () => {
+                // Reset scroll
+                feedPage.scrollTop = 0;
                 feedPage.classList.remove('visible');
                 
                 // FLIP-like transition back
@@ -1191,115 +1314,111 @@
                     app.style.display = 'flex';
                     app.style.opacity = '1';
                 }, 300);
-
-                if (subdomainSwiper) {
-                    subdomainSwiper.destroy(true, true);
-                    subdomainSwiper = null;
-                }
             });
 
             function showFeed(domain) {
-                const subdomainWrapper = document.getElementById('subdomain-wrapper');
+                const feedContent = document.getElementById('blog-feed-content');
                 const subdomainNav = document.getElementById('subdomain-nav');
                 const domainData = storyData[domain];
+                currentDomainData = domainData;
                 
                 // Show feed page immediately so user sees feedback/loading
                 app.style.display = 'none';
                 app.style.opacity = '0';
                 feedPage.classList.add('visible');
+                feedPage.style.overflowY = 'auto'; // Enable scrolling for the page
                 feedPage.classList.remove('blur-in');
                 void feedPage.offsetWidth; // Trigger reflow
                 feedPage.classList.add('blur-in');
 
                 if (!domainData || Object.keys(domainData).length === 0) {
                     console.warn(`No stories found for domain: ${domain}`);
-                    subdomainWrapper.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem; width: 100%;">No stories available for this section yet. Please check back later.</div>';
+                    feedContent.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem; width: 100%;">No stories available for this section yet. Please check back later.</div>';
                     subdomainNav.innerHTML = '';
                     return;
                 }
                 
-                subdomainWrapper.innerHTML = ''; 
                 subdomainNav.innerHTML = '';
 
                 const subdomains = Object.keys(domainData);
 
+                // Render Nav
                 subdomains.forEach((subdomainName, index) => {
                     const navItem = document.createElement('div');
                     navItem.classList.add('subdomain-nav-item');
                     navItem.textContent = subdomainName;
                     if (index === 0) {
                         navItem.classList.add('active');
+                        renderSubdomainContent(subdomainName);
                     }
                     navItem.addEventListener('click', () => {
-                        if (subdomainSwiper) {
-                            subdomainSwiper.slideTo(index);
-                        }
+                        // Update active state
+                        document.querySelectorAll('.subdomain-nav-item').forEach(item => item.classList.remove('active'));
+                        navItem.classList.add('active');
+                        // Render content
+                        renderSubdomainContent(subdomainName);
                     });
                     subdomainNav.appendChild(navItem);
-
-                    const stories = domainData[subdomainName];
-                    let storiesHTML = '';
-
-                    stories.forEach((story, sIndex) => {
-                        // Staggered text animation delay
-                        const delay = sIndex * 0.1; 
-                        storiesHTML += `
-                            <div class="swiper-slide story-card" 
-                                data-full-content="${encodeURIComponent(story.fullContent)}"
-                                data-headline="${story.headline}">
-                                <img class="story-image" src="${story.image}" alt="${story.headline}" data-swiper-parallax="${isMobile ? '10%' : '20%'}" onerror="this.src='https://placehold.co/600x400/21262d/8b949e?text=Image+Not+Found'">
-                                <div class="story-content">
-                                    <h3 style="animation: slideUpFade 0.5s ease-out ${delay}s forwards; opacity: 0; transform: translateY(20px);">${story.headline}</h3>
-                                    <p style="animation: slideUpFade 0.5s ease-out ${delay + 0.1}s forwards; opacity: 0; transform: translateY(20px);">${story.summary}</p>
-                                    <div class="keywords">
-                                        ${(story.keywords || []).map((k, kIndex) => 
-                                            `<span class="keyword" style="animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${delay + 0.2 + (kIndex * 0.05)}s forwards; opacity: 0; transform: scale(0);">${k}</span>`).join('')}
-                                    </div>
-                                    <div class="story-footer">
-                                        <span class="source-link">${story.date} &bull; <a href="${story.originalUrl}" target="_blank">${story.source}</a></span>
-                                        <button class="linkedin-share-btn">
-                                            <i class="fab fa-linkedin"></i> Share
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>`;
-                    });
-
-                    if (storiesHTML) {
-                        subdomainWrapper.innerHTML += `
-                            <div class="swiper-slide">
-                                <div class="swiper-container blog-swiper">
-                                    <div class="swiper-wrapper">${storiesHTML}</div>
-                                </div>
-                            </div>`;
-                    }
                 });
+            }
+
+            function renderSubdomainContent(subdomainName) {
+                const feedContent = document.getElementById('blog-feed-content');
+                const stories = currentDomainData[subdomainName] || [];
                 
-                subdomainSwiper = new Swiper('#subdomain-swiper', {
-                    direction: 'horizontal',
-                    loop: false,
-                    resistance: true,
-                    resistanceRatio: 0.85,
-                    on: {
-                        slideChange: function () {
-                            const activeIndex = this.activeIndex;
-                            document.querySelectorAll('.subdomain-nav-item').forEach((item, index) => {
-                                item.classList.toggle('active', index === activeIndex);
-                            });
-                        }
-                    }
-                });
+                if (stories.length === 0) {
+                    feedContent.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">No stories found.</div>';
+                    return;
+                }
 
-                document.querySelectorAll('.blog-swiper').forEach(swiperElement => {
-                    new Swiper(swiperElement, {
-                        direction: 'vertical',
-                        loop: false,
-                        parallax: true, // Enable parallax
-                        resistance: true,
-                        resistanceRatio: 0.85,
-                        nested: true,
-                    });
-                });
+                const featured = stories[0];
+                const latest = stories.slice(1);
+
+                let html = `
+                <section class="blog-container">
+                    <div class="blog-grid">
+                        <!-- LEFT COLUMN: Featured -->
+                        <div class="featured-section">
+                            <p class="section-label">FEATURED ARTICLE</p>
+                            <div class="featured-card story-card-trigger" 
+                                 data-headline="${featured.headline}"
+                                 data-full-content="${encodeURIComponent(featured.fullContent)}"
+                                 data-original-url="${featured.originalUrl}"
+                                 data-image="${featured.image}">
+                                
+                                <img src="${featured.image}" class="featured-image" onerror="this.src='https://placehold.co/800x500/21262d/8b949e?text=Image+Not+Found'">
+                                <p class="category">${(featured.keywords && featured.keywords[0]) || 'Highlight'}</p>
+                                <h2 class="featured-title">${featured.headline}</h2>
+                                <p class="featured-description">${featured.summary}</p>
+                                <p class="meta">${featured.source} • ${featured.date}</p>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: Latest News -->
+                        <div class="latest-section">
+                            <h3 class="latest-title">Latest News</h3>
+                            ${latest.map(story => `
+                            <div class="news-card story-card-trigger"
+                                 data-headline="${story.headline}"
+                                 data-full-content="${encodeURIComponent(story.fullContent)}"
+                                 data-original-url="${story.originalUrl}"
+                                 data-image="${story.image}">
+                                <img src="${story.image}" onerror="this.src='https://placehold.co/100x100/21262d/8b949e?text=Img'">
+                                <div>
+                                    <p class="category">${(story.keywords && story.keywords[0]) || 'News'}</p>
+                                    <h4>${story.headline}</h4>
+                                    <p class="meta">${story.source} • ${story.date}</p>
+                                </div>
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>`;
+
+                feedContent.innerHTML = html;
+                
+                // Scroll to top when switching tabs
+                document.getElementById('feed-page').scrollTop = 0;
             }
 
             const shareModal = document.getElementById('share-modal');
@@ -1361,7 +1480,7 @@
                 
                 previewImage.style.display = 'none';
                 recreateBtn.disabled = true;
-                const storyData = {
+                const requestData = {
                     headline: activeStoryCard.dataset.headline,
                     fullContent: decodeURIComponent(activeStoryCard.dataset.fullContent),
                     originalUrl: activeStoryCard.querySelector('.source-link a').href,
@@ -1372,7 +1491,7 @@
                     const response = await fetch(`${API_BASE_URL}/api/share/preview`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(storyData),
+                        body: JSON.stringify(requestData),
                         credentials: 'include'
                     });
                     if (response.status === 401) {
@@ -1423,7 +1542,7 @@
                 const postData = {
                     content: previewContent.textContent,
                     imageUrl: previewImage.src,
-                    originalUrl: activeStoryCard.querySelector('.source-link a').href,
+                    originalUrl: activeStoryCard.dataset.originalUrl,
                     headline: activeStoryCard.dataset.headline,
                     ...getShareOptions()
                 };
@@ -1485,10 +1604,10 @@
             });
 
             document.body.addEventListener('click', async function(event) {
-                const shareBtn = event.target.closest('.linkedin-share-btn');
-                if (shareBtn) {
+                const cardTrigger = event.target.closest('.story-card-trigger');
+                if (cardTrigger) {
                     createRipple(event);
-                    activeStoryCard = shareBtn.closest('.story-card');
+                    activeStoryCard = cardTrigger;
                     openModal();
                     const isAuthenticated = await generatePreview(); 
                     if (isAuthenticated) {
