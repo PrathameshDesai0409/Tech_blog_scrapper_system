@@ -924,6 +924,52 @@
             }
         }
 
+        .read-more-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent);
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background 0.2s ease;
+            margin-top: 10px;
+            border: 1px solid rgba(88, 166, 255, 0.2);
+            z-index: 2;
+            position: relative;
+        }
+        .read-more-btn:hover {
+            background: rgba(88, 166, 255, 0.2);
+        }
+        .read-more-btn::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(13, 17, 23, 0.95);
+            color: var(--text-primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .read-more-btn:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-2px);
+        }
+
         /* --- Editorial Layout CSS --- */
         .blog-container { 
             max-width: 1200px;
@@ -1491,6 +1537,7 @@
                                 <h2 class="featured-title">${featured.headline}</h2>
                                 <p class="featured-description">${featured.summary}</p>
                                 <p class="meta">${featured.source} • ${featured.date}</p>
+                                <a href="${featured.originalUrl}" target="_blank" class="read-more-btn" data-tooltip="Open in new tab">Read Article <i class="fas fa-external-link-alt"></i></a>
                             </div>
 
                             <!-- Article List (Stacked below featured) -->
@@ -1502,11 +1549,14 @@
                                      data-original-url="${story.originalUrl}"
                                      data-image="${story.image}">
                                     <img src="${story.image}" onerror="this.src='https://placehold.co/400x300/21262d/8b949e?text=Img'">
-                                    <div>
+                                    <div style="flex: 1; display: flex; flex-direction: column;">
                                         <p class="category">${(story.keywords && story.keywords[0]) || 'News'}</p>
                                         <h3>${story.headline}</h3>
                                         <p class="description">${story.summary}</p>
-                                        <p class="meta">${story.source} • ${story.date}</p>
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto;">
+                                            <p class="meta">${story.source} • ${story.date}</p>
+                                            <a href="${story.originalUrl}" target="_blank" class="read-more-btn" style="margin-top: 0;" data-tooltip="Open in new tab">Read <i class="fas fa-external-link-alt"></i></a>
+                                        </div>
                                     </div>
                                 </div>
                                 `).join('')}
@@ -1524,10 +1574,13 @@
                                  data-original-url="${story.originalUrl}"
                                  data-image="${story.image}">
                                 <img src="${story.image}" onerror="this.src='https://placehold.co/100x100/21262d/8b949e?text=Img'">
-                                <div>
+                                <div style="flex: 1; display: flex; flex-direction: column;">
                                     <p class="category">${(story.keywords && story.keywords[0]) || 'News'}</p>
                                     <h4>${story.headline}</h4>
-                                    <p class="meta">${story.source} • ${story.date}</p>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto;">
+                                        <p class="meta">${story.source} • ${story.date}</p>
+                                        <a href="${story.originalUrl}" target="_blank" class="read-more-btn" style="margin-top: 0; padding: 4px 8px;" data-tooltip="Open in new tab"><i class="fas fa-external-link-alt"></i></a>
+                                    </div>
                                 </div>
                             </div>
                             `).join('') : '<p style="color:var(--text-secondary); font-size:0.9rem;">No more news to show.</p>'}
@@ -1725,6 +1778,8 @@
             });
 
             document.body.addEventListener('click', async function(event) {
+                if (event.target.closest('.read-more-btn')) return;
+
                 const cardTrigger = event.target.closest('.story-card-trigger');
                 if (cardTrigger) {
                     createRipple(event);
