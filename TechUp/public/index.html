@@ -811,14 +811,18 @@
         /* --- Responsive Adjustments --- */
         @media (max-width: 768px) {
             #home-page {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto; /* Let rows size automatically */
+                display: flex;
+                flex-direction: column;
                 gap: 1rem;
                 padding: 0 1rem;
             }
             #auth-container {
-                top: 1rem;
-                right: 1rem;
+                position: relative;
+                top: auto;
+                right: auto;
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 1rem;
             }
 
             .domain-card.horizontal {
