@@ -411,6 +411,8 @@ cron.schedule('0 17 * * *', async () => {
     } catch (error) {
         console.error('Error running scheduled scraper:', error);
     }
+}, {
+    timezone: "America/New_York" // Set your preferred timezone here
 });
 
 app.listen(PORT, () => {

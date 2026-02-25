@@ -1524,7 +1524,10 @@
 
             function renderSubdomainContent(subdomainName) {
                 const feedContent = document.getElementById('blog-feed-content');
-                const stories = currentDomainData[subdomainName] || [];
+                let stories = currentDomainData[subdomainName] || [];
+
+                // Sort stories by date (latest to oldest)
+                stories = stories.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
                 
                 if (stories.length === 0) {
                     feedContent.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">No stories found.</div>';
