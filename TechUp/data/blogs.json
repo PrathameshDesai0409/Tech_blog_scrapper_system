@@ -7,7 +7,10 @@
             { "name": "Similarweb", "url": "https://www.similarweb.com" },
             { "name": "MarketBeat", "url": "https://www.marketbeat.com" },
             { "name": "Google Trends", "url": "https://trends.google.com" },
-            { "name": "Exploding Topics", "url": "https://explodingtopics.com" }
+            { "name": "Exploding Topics", "url": "https://explodingtopics.com" },
+            { "name": "Statista Blog", "url": "https://www.statista.com/blog" },
+            { "name": "Similarweb Insights", "url": "https://www.similarweb.com/blog" },
+            { "name": "Exploding Topics Blog", "url": "https://explodingtopics.com/blog" }
         ],
         "Finance": [
             { "name": "Morningstar", "url": "https://www.morningstar.com" },
@@ -17,32 +20,62 @@
             { "name": "The Motley Fool", "url": "https://www.fool.com" },
             { "name": "Seeking Alpha", "url": "https://seekingalpha.com" },
             { "name": "Investopedia", "url": "https://www.investopedia.com" },
-            { "name": "Bloomberg", "url": "https://www.bloomberg.com" }
+            { "name": "Bloomberg", "url": "https://www.bloomberg.com" },
+            { "name": "Morningstar Insights", "url": "https://www.morningstar.com/insights" },
+            { "name": "Yahoo Finance Authors", "url": "https://finance.yahoo.com/authors" },
+            { "name": "TradingView Ideas", "url": "https://www.tradingview.com/ideas" },
+            { "name": "Seeking Alpha News", "url": "https://seekingalpha.com/market-news" },
+            { "name": "Motley Fool Investing", "url": "https://www.fool.com/investing" },
+            { "name": "Investopedia News", "url": "https://www.investopedia.com/news" },
+            { "name": "Bloomberg Markets", "url": "https://www.bloomberg.com/markets" }
         ],
         "Industry Updates": [
             { "name": "Reuters", "url": "https://www.reuters.com" },
             { "name": "The Economist", "url": "https://www.economist.com" },
-            { "name": "Nielsen", "url": "https://www.nielsen.com" }
+            { "name": "Nielsen", "url": "https://www.nielsen.com" },
+            { "name": "Reuters Business", "url": "https://www.reuters.com/business" },
+            { "name": "Economist Business", "url": "https://www.economist.com/business" },
+            { "name": "Nielsen Insights", "url": "https://www.nielsen.com/insights" },
+            { "name": "Financial Times", "url": "https://www.ft.com" },
+            { "name": "Wall Street Journal", "url": "https://www.wsj.com" },
+            { "name": "Forbes", "url": "https://www.forbes.com" }
         ],
         "Management Consultancy": [
             { "name": "PwC", "url": "https://www.pwc.com" },
             { "name": "EY", "url": "https://www.ey.com" },
             { "name": "BCG", "url": "https://www.bcg.com" },
-            { "name": "Bain & Company", "url": "https://www.bain.com" }
+            { "name": "Bain & Company", "url": "https://www.bain.com" },
+            { "name": "PwC Insights", "url": "https://www.pwc.com/gx/en/issues.html" },
+            { "name": "EY Insights", "url": "https://www.ey.com/en_gl/insights" },
+            { "name": "BCG Perspectives", "url": "https://www.bcg.com/perspectives" },
+            { "name": "Bain Insights", "url": "https://www.bain.com/insights" },
+            { "name": "McKinsey Insights", "url": "https://www.mckinsey.com/featured-insights" },
+            { "name": "Deloitte Insights", "url": "https://www2.deloitte.com/global/en/insights.html" },
+            { "name": "KPMG Insights", "url": "https://kpmg.com/xx/en/home/insights.html" }
         ],
         "Government updates": [
             { "name": "CIA World Factbook", "url": "https://www.cia.gov/the-world-factbook" },
             { "name": "U.S. Census Bureau", "url": "https://www.census.gov" },
             { "name": "BEA", "url": "https://www.bea.gov" },
             { "name": "BLS", "url": "https://www.bls.gov" },
-            { "name": "FRED", "url": "https://fred.stlouisfed.org" }
+            { "name": "FRED", "url": "https://fred.stlouisfed.org" },
+            { "name": "FRED Blog", "url": "https://fredblog.stlouisfed.org" },
+            { "name": "BLS Blog", "url": "https://www.bls.gov/bls/blog/home.htm" },
+            { "name": "World Bank Data", "url": "https://data.worldbank.org" },
+            { "name": "Eurostat", "url": "https://ec.europa.eu/eurostat" }
         ],
         "StartUps": [
             { "name": "Crunchbase", "url": "https://www.crunchbase.com" },
             { "name": "AngelList", "url": "https://angel.co" },
             { "name": "Product Hunt", "url": "https://www.producthunt.com" },
             { "name": "TechCrunch", "url": "https://techcrunch.com" },
-            { "name": "Mashable", "url": "https://mashable.com" }
+            { "name": "Mashable", "url": "https://mashable.com" },
+            { "name": "Crunchbase News", "url": "https://news.crunchbase.com" },
+            { "name": "TechCrunch Startups", "url": "https://techcrunch.com/tag/startups" },
+            { "name": "Product Hunt Blog", "url": "https://blog.producthunt.com" },
+            { "name": "AngelList Blog", "url": "https://angel.co/blog" },
+            { "name": "VentureBeat", "url": "https://venturebeat.com" },
+            { "name": "PitchBook", "url": "https://pitchbook.com" }
         ],
         "B2B Marketing": [
             { "name": "B2B Marketing", "url": "https://www.b2bmarketing.net" },
@@ -54,17 +87,25 @@
             { "name": "LinkedIn Marketing Blog", "url": "https://www.linkedin.com/business/marketing/blog" },
             { "name": "TopRank Marketing Blog", "url": "https://www.toprankblog.com" },
             { "name": "Business 2 Community", "url": "https://www.business2community.com" },
-            { "name": "Forrester Research", "url": "https://www.forrester.com" }
+            { "name": "Forrester Research", "url": "https://www.forrester.com" },
+            { "name": "SaaStr Blog", "url": "https://www.saastr.com/category/blog" },
+            { "name": "Heinz Marketing Blog", "url": "https://www.heinzmarketing.com/blog" },
+            { "name": "Forrester Blogs", "url": "https://www.forrester.com/blogs" },
+            { "name": "Demand Gen Blog", "url": "https://www.demandgenreport.com/blog" },
+            { "name": "MarTech Insights", "url": "https://martechseries.com/mts-insights" }
         ]
     },
     "marketing": {
         "Economic": [
             { "name": "S&P Global", "url": "https://www.spglobal.com" },
             { "name": "Fitch Ratings", "url": "https://www.fitchratings.com" },
-            { "name": "Moody’s Analytics", "url": "https://www.moodysanalytics.com" },
+            { "name": "Moody's Analytics", "url": "https://www.moodysanalytics.com" },
             { "name": "World Bank Data", "url": "https://data.worldbank.org" },
             { "name": "IMF Data", "url": "https://data.imf.org" },
-            { "name": "OECD Data", "url": "https://data.oecd.org" }
+            { "name": "OECD Data", "url": "https://data.oecd.org" },
+            { "name": "World Bank Blogs", "url": "https://blogs.worldbank.org" },
+            { "name": "OECD Insights Blog", "url": "https://oecdecoscope.wordpress.com" },
+            { "name": "Conference Board", "url": "https://www.conference-board.org" }
         ],
         "Digital Marketing": [
             { "name": "Econsultancy", "url": "https://econsultancy.com" },
@@ -79,7 +120,9 @@
             { "name": "Social Media Examiner", "url": "https://www.socialmediaexaminer.com" },
             { "name": "Sprout Social Insights", "url": "https://sproutsocial.com/insights" },
             { "name": "Hootsuite Blog", "url": "https://blog.hootsuite.com" },
-            { "name": "AdEspresso Blog", "url": "https://adespresso.com/blog" }
+            { "name": "AdEspresso Blog", "url": "https://adespresso.com/blog" },
+            { "name": "HubSpot Marketing", "url": "https://blog.hubspot.com/marketing" },
+            { "name": "Backlinko", "url": "https://backlinko.com/blog" }
         ],
         "B2B + Digital": [
             { "name": "Smart Insights", "url": "https://www.smartinsights.com" },
@@ -91,21 +134,27 @@
             { "name": "Campaign Monitor Blog", "url": "https://www.campaignmonitor.com/resources/guides" },
             { "name": "Outbrain Blog", "url": "https://www.outbrain.com/blog" },
             { "name": "Think with Google", "url": "https://www.thinkwithgoogle.com" },
-            { "name": "SEMrush Blog", "url": "https://www.semrush.com/blog" }
+            { "name": "SEMrush Blog", "url": "https://www.semrush.com/blog" },
+            { "name": "Smart Insights Blog", "url": "https://www.smartinsights.com/blog" },
+            { "name": "Buffer Resources", "url": "https://buffer.com/resources/blog" }
         ],
         "Niche Marketing": [
             { "name": "Convince & Convert", "url": "https://www.convinceandconvert.com/blog" },
             { "name": "Vidyard Blog", "url": "https://www.vidyard.com/blog" },
             { "name": "Drift Blog", "url": "https://www.drift.com/blog" },
             { "name": "Crazy Egg Blog", "url": "https://www.crazyegg.com/blog" },
-            { "name": "GrowthHackers", "url": "https://growthhackers.com" }
+            { "name": "GrowthHackers", "url": "https://growthhackers.com" },
+            { "name": "GrowthHackers Articles", "url": "https://growthhackers.com/articles" }
         ],
         "Social Media": [
             { "name": "WordStream Blog", "url": "https://www.wordstream.com/blog" },
             { "name": "PPC Hero", "url": "https://www.ppchero.com" },
             { "name": "Google Ads Blog", "url": "https://ads.googleblog.com" },
             { "name": "AdRoll Blog", "url": "https://www.adroll.com/blog" },
-            { "name": "Facebook Business Blog", "url": "https://www.facebook.com/business/news" }
+            { "name": "Facebook Business Blog", "url": "https://www.facebook.com/business/news" },
+            { "name": "Instagram Business Blog", "url": "https://business.instagram.com/blog" },
+            { "name": "Twitter Marketing", "url": "https://business.twitter.com" },
+            { "name": "LinkedIn Marketing Blog", "url": "https://blog.linkedin.com/topic/marketing" }
         ]
     },
     "ai": {
@@ -114,15 +163,18 @@
             { "name": "HubSpot Research", "url": "https://research.hubspot.com" },
             { "name": "Sprinklr Blog", "url": "https://www.sprinklr.com/blog" },
             { "name": "Econsultancy", "url": "https://econsultancy.com" },
-            { "name": "MarketingProfs", "url": "https://www.marketingprofs.com" }
+            { "name": "MarketingProfs", "url": "https://www.marketingprofs.com" },
+            { "name": "Marketing Week AI", "url": "https://www.marketingweek.com/topics/artificial-intelligence-ai" },
+            { "name": "HubSpot AI Reports", "url": "https://www.hubspot.com/ai" }
         ],
         "Marketing Automation & analytics": [
             { "name": "Marketo Blog", "url": "https://blog.marketo.com" },
             { "name": "ActiveCampaign Blog", "url": "https://www.activecampaign.com/blog" },
             { "name": "Kissmetrics Blog", "url": "https://blog.kissmetrics.io" },
             { "name": "Unbounce Blog", "url": "https://unbounce.com/blog" },
-            { "name": "OptinMonster Blog", "url": "https://optinmonster.com/blog" }
+            { "name": "OptinMonster Blog", "url": "https://optinmonster.com/blog" },
+            { "name": "Salesforce Marketing Blog", "url": "https://www.salesforce.com/blog/category/marketing-cloud" },
+            { "name": "HubSpot Automation", "url": "https://blog.hubspot.com/marketing-automation" }
         ]
     }
 }
-
